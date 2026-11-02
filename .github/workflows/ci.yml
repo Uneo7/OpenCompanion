@@ -2,10 +2,9 @@ name: CI
 
 # Branch pushes and pull requests. Release tags run it through release.yml (workflow_call) instead.
 on:
-  push:
-    branches: ['**']
   pull_request:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
