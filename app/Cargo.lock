@@ -2519,7 +2519,7 @@ dependencies = [
 
 [[package]]
 name = "oc-ais"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -2529,7 +2529,7 @@ dependencies = [
 
 [[package]]
 name = "oc-app"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "ab_glyph",
  "ashpd",
@@ -2553,7 +2553,7 @@ dependencies = [
 
 [[package]]
 name = "oc-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2568,7 +2568,7 @@ dependencies = [
 
 [[package]]
 name = "oc-device"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "crc32fast",
  "oc-ais",
@@ -2587,7 +2587,7 @@ dependencies = [
 
 [[package]]
 name = "oc-dfu"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "nusb",
  "thiserror 2.0.21",
@@ -2595,7 +2595,7 @@ dependencies = [
 
 [[package]]
 name = "oc-install"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "crc32fast",
  "dirs",
@@ -2608,7 +2608,7 @@ dependencies = [
 
 [[package]]
 name = "oc-osvolume"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "alsa",
  "thiserror 2.0.21",
@@ -2618,7 +2618,7 @@ dependencies = [
 
 [[package]]
 name = "oc-protocol"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "hidapi",
  "thiserror 2.0.21",
@@ -2626,7 +2626,7 @@ dependencies = [
 
 [[package]]
 name = "oc-ramload"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "crc32fast",
  "oc-ais",
@@ -2636,7 +2636,7 @@ dependencies = [
 
 [[package]]
 name = "oc-tas-image"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "crc32fast",
  "thiserror 2.0.21",
