@@ -32,8 +32,10 @@ fetch_sysroot() { # $1 = deb arch (amd64|arm64), $2 = multiarch dir (x86_64-linu
         rm -rf "$x"
     done
     # Recreate the dev symlinks as plain copies (portable to hosts without symlink support).
-    cp -f "$lib"/libudev.so.1.*.* "$lib/libudev.so"   # real files; SONAME stays libudev.so.1
-    cp -f "$lib"/libasound.so.2.*.* "$lib/libasound.so"
+    # rm first: on hosts where tar did create them, they are symlinks to the very file being copied.
+    rm -f "$lib/libudev.so" "$lib/libasound.so"
+    cp "$lib"/libudev.so.1.*.* "$lib/libudev.so"   # real files; SONAME stays libudev.so.1
+    cp "$lib"/libasound.so.2.*.* "$lib/libasound.so"
 }
 
 write_pkg_config_shim() {
