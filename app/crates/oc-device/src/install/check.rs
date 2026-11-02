@@ -81,7 +81,7 @@ pub fn dsp_differs(running: Option<&str>, bundled: Option<&str>) -> bool {
     }
 }
 
-struct Targets {
+pub(super) struct Targets {
     dsp: Option<String>,
     usb: Option<String>,
     tas: Option<oc_install::tas::TasTarget>,
@@ -133,12 +133,12 @@ fn check(shared: &Shared, known: &RunningVersions) -> Result<Vec<ChipUpdate>, St
 /// not reachable (offline, rate limit): the last downloaded release stays, silently, with a status line.
 /// `None`: releases are not used, or none is known (the local files then).
 #[cfg(feature = "github")]
-fn refresh_release(shared: &Shared) -> Option<Targets> {
+pub(super) fn refresh_release(shared: &Shared) -> Option<Targets> {
     use super::release::{github, store};
     let (api, repo) = shared.release().remote.clone()?;
     let root = crate::paths::firmware_dir();
     let cached = store::latest(&root);
-    let fetched = github::latest(&api, &repo).and_then(|r| github::available(&r));
+    let fetched = github::find(&api, &repo);
     let mut rel = shared.release();
     match fetched {
         Ok(av) if !av.manifest.app_supported(env!("CARGO_PKG_VERSION")) => {
@@ -158,8 +158,11 @@ fn refresh_release(shared: &Shared) -> Option<Targets> {
             }
         }
         Err(e) => {
-            rel.status = Some(super::host::ReleaseStatus::Offline { cached: cached.as_ref().map(|(tag, ..)| tag.clone()), error: e.to_string() });
+            rel.status = Some(super::host::ReleaseStatus::Unavailable { cached: cached.as_ref().map(|(tag, ..)| tag.clone()), error: e });
         }
+    }
+    if let Some(s) = &rel.status {
+        super::log_file::append(&[format!("GitHub release ({repo}): {s}")]);
     }
     drop(rel);
     // No release folder in use yet (first run): the newest downloaded one.
@@ -172,7 +175,8 @@ fn refresh_release(shared: &Shared) -> Option<Targets> {
 }
 
 #[cfg(not(feature = "github"))]
-fn refresh_release(_shared: &Shared) -> Option<Targets> {
+#[allow(dead_code)]
+pub(super) fn refresh_release(_shared: &Shared) -> Option<Targets> {
     None
 }
 

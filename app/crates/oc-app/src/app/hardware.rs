@@ -39,8 +39,10 @@ impl App {
             self.ui.settings.console += &format!("{out}\n");
         }
         if self.device.take_profile_reloaded() && !self.ui.eq.dirty {
-            self.ui.eq.draft = self.device.profiles()[self.device.active_profile()].bands.clone();
-            self.ui.eq.selected = 0;
+            let bands = self.device.profiles()[self.device.active_profile()].bands.clone();
+            if self.ui.eq.load(bands) {
+                self.ui.toast.show(ctx, crate::i18n::tr("eq.boost.scaled"));
+            }
         }
         self.offer_install(ctx);
         self.plan_prompt(ctx);

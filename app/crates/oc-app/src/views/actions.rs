@@ -37,10 +37,10 @@ pub fn apply(ctx: &Context, cx: &mut Cx, a: ViewAction, _body: Option<&Body>) ->
         ViewAction::Import(i, p) => {
             let name = cx.profile_name(i);
             if cx.device.import_profile(i, &p) {
-                cx.ui.eq.draft = cx.device.profiles()[i].bands.clone();
-                cx.ui.eq.selected = 0;
                 cx.ui.eq.dirty = false;
-                cx.ui.toast.show(ctx, t_with("profile.import.done", &[("name", &name)]));
+                let scaled = cx.ui.eq.load(cx.device.profiles()[i].bands.clone());
+                let done = t_with("profile.import.done", &[("name", &name)]);
+                cx.ui.toast.show(ctx, if scaled { format!("{done} · {}", tr("eq.boost.scaled")) } else { done });
             } else {
                 cx.ui.toast.show(ctx, t_with("profile.import.error", &[("error", &tr("profile.import.refused"))]));
             }

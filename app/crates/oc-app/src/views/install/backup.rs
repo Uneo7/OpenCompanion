@@ -60,8 +60,9 @@ pub fn status_text(s: &BackupState) -> String {
     }
 }
 
+/// Only the restore needs a backup beforehand: the first install makes (and verifies) it as its first step.
 pub fn blocks(flow: &Flow, s: &BackupState) -> bool {
-    matches!(flow, Flow::First | Flow::Restore) && !matches!(s, BackupState::Saved { .. })
+    matches!(flow, Flow::Restore) && !matches!(s, BackupState::Saved { .. })
 }
 
 #[cfg(test)]
@@ -74,6 +75,7 @@ mod tests {
         assert_eq!(date("x"), "x");
         assert!(blocks(&Flow::Restore, &BackupState::Missing));
         assert!(!blocks(&Flow::Update, &BackupState::Missing));
+        assert!(!blocks(&Flow::First, &BackupState::Missing), "the first install makes the backup itself");
         assert!(!blocks(&Flow::First, &BackupState::Saved { date: "d".into(), dir: Default::default(), created: true }));
     }
 }

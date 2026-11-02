@@ -31,8 +31,8 @@ pub enum ReleaseStatus {
     InUse { tag: String },
     Available { tag: String },
     NeedsApp { tag: String, min: String },
-    /// GitHub could not be reached: the newest downloaded release, if any, is used.
-    Offline { cached: Option<String>, error: String },
+    /// No release could be used (`error` says why): the newest downloaded one, if any, is used.
+    Unavailable { cached: Option<String>, error: super::ReleaseError },
 }
 
 impl std::fmt::Display for ReleaseStatus {
@@ -41,8 +41,8 @@ impl std::fmt::Display for ReleaseStatus {
             Self::InUse { tag } => write!(f, "firmware {tag} (GitHub)"),
             Self::Available { tag } => write!(f, "firmware {tag} available on GitHub"),
             Self::NeedsApp { tag, min } => write!(f, "release {tag} needs app {min} or newer"),
-            Self::Offline { cached: Some(tag), error } => write!(f, "GitHub not reachable ({error}): firmware {tag} (downloaded)"),
-            Self::Offline { cached: None, error } => write!(f, "GitHub not reachable ({error}): no firmware downloaded yet"),
+            Self::Unavailable { cached: Some(tag), error } => write!(f, "{error}: firmware {tag} (downloaded) in use"),
+            Self::Unavailable { cached: None, error } => write!(f, "{error}: no firmware downloaded yet"),
         }
     }
 }

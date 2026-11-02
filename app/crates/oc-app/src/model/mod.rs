@@ -2,6 +2,7 @@
 //! (the real speaker over USB, `oc-device`) or [`SimDevice`] (a simulated speaker, `--sim`).
 
 pub mod biquad;
+pub mod boost;
 pub mod device;
 pub mod eq;
 pub mod format;

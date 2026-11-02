@@ -34,9 +34,14 @@ impl App {
             return;
         }
         let eq = &mut self.ui.eq;
+        // The combined boost of an output never goes over the limit: the gesture stops there.
+        if crate::model::boost::limit_profile_edit(&eq.last_ok, &mut eq.draft) {
+            eq.limited = true;
+        }
         if eq.link {
             eq.draft.mirror_from(eq.target);
         }
+        eq.last_ok = eq.draft.clone();
         eq.dirty = true;
         eq.edits += 1;
         if eq.live {
@@ -68,6 +73,15 @@ impl App {
     /// not again after a failure until the next change. Called once per frame.
     pub(super) fn auto_save(&mut self, ctx: &Context) {
         const DELAY_S: f64 = 1.5;
+        // The boost limit bit: one short hint (not again while the same gesture goes on).
+        if std::mem::take(&mut self.ui.eq.limited) {
+            let now = ctx.input(|i| i.time);
+            let key = eframe::egui::Id::new("boost-hint");
+            if ctx.data(|d| d.get_temp::<f64>(key)).is_none_or(|t| now - t > 4.0) {
+                self.ui.toast.show(ctx, tr("eq.boost.limited"));
+            }
+            ctx.data_mut(|d| d.insert_temp(key, now));
+        }
         let eq = &mut self.ui.eq;
         if !eq.dirty || eq.failed_at_edit == Some(eq.edits) {
             return;
@@ -95,8 +109,10 @@ impl App {
             self.save(ctx);
         }
         self.device.set_active_profile(i);
-        self.ui.eq.draft = self.device.profiles()[i].bands.clone();
-        self.ui.eq.selected = 0;
+        let bands = self.device.profiles()[i].bands.clone();
+        if self.ui.eq.load(bands) {
+            self.ui.toast.show(ctx, tr("eq.boost.scaled"));
+        }
     }
 
     fn duplicate(&mut self, ctx: &Context, from: usize, to: usize) {
@@ -107,9 +123,8 @@ impl App {
         let name = duplicate_name(&profiles[from], from);
         let hue = next_free_hue(profiles, to);
         if self.device.duplicate(from, to, &name, hue) {
-            self.ui.eq.draft = self.device.profiles()[to].bands.clone();
-            self.ui.eq.selected = 0;
             self.ui.eq.dirty = false;
+            self.ui.eq.load(self.device.profiles()[to].bands.clone());
             self.ui.toast.show(ctx, t_with("profile.duplicate.done", &[("name", &name), ("n", &(to + 1))]));
         }
     }

@@ -50,6 +50,10 @@ pub struct EqState {
     /// The edit count whose save failed: no retry until the next change.
     pub failed_at_edit: Option<u64>,
     pub draft: ProfileBands,
+    /// `draft` after the last edit, within the boost limit: where a gesture over the limit is moved back to.
+    pub last_ok: ProfileBands,
+    /// The boost limit bit since the hint was last shown.
+    pub limited: bool,
 }
 
 impl EqState {
@@ -66,8 +70,24 @@ impl EqState {
             edits: 0,
             edited_at: 0.0,
             failed_at_edit: None,
+            last_ok: draft.clone(),
             draft,
+            limited: false,
         }
+    }
+
+    /// Edits `bands` (a profile from the speaker or a file), scaled within the boost limit; true when it was
+    /// (the scaled bands are then saved like an edit).
+    pub fn load(&mut self, mut bands: ProfileBands) -> bool {
+        let scaled = crate::model::boost::fit(&mut bands);
+        self.last_ok = bands.clone();
+        self.draft = bands;
+        self.selected = 0;
+        if scaled {
+            self.dirty = true;
+            self.edits += 1;
+        }
+        scaled
     }
 }
 

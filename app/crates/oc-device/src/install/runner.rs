@@ -221,22 +221,28 @@ fn set_restored_dsp_marker(crc: Option<u32>) {
 /// "Download", real progress), checked and stored; its folder becomes the installer's files.
 #[cfg(feature = "github")]
 fn prepare_release(src: &FirmwareSources, shared: &Shared, host: &mut UiHost) -> Run<FirmwareSources> {
-    use super::release::{github, store};
     let Some(av) = shared.release().pending.clone() else { return Ok(src.clone()) };
     host.enter(StepId::Download);
     shared.update(|p| p.log.push(format!("downloading {} ({} bytes, release {})", av.zip.name, av.zip.size, av.tag)));
     let mut last = 0u8;
-    let zip = github::download(&av.zip, |done, total| {
-        let pct = (done * 100 / total).min(99) as u8;
+    let s = download_release(shared, &av, |pct| {
         if pct != last {
             last = pct;
             shared.update(|p| p.step_percent(pct));
         }
     })
-    .or_else(|e| fail(format!("download of the firmware: {e}"), true))?;
-    let dir = store::install(&crate::paths::firmware_dir(), &av.tag, &zip, av.zip_sha256.as_deref(), &av.manifest)
-        .or_else(|e| fail(e, true))?;
-    shared.update(|p| p.log.push(format!("release {} verified: {}", av.tag, dir.display())));
+    .or_else(|e| fail(e, true))?;
+    shared.update(|p| p.log.push(format!("release {} verified: {}", av.tag, s.dsp_app.parent().unwrap_or(&s.dsp_app).display())));
+    Ok(s)
+}
+
+/// Downloads, checks and stores `av`; its folder becomes the installer's files.
+#[cfg(feature = "github")]
+pub(super) fn download_release(shared: &Shared, av: &super::release::github::Available, mut percent: impl FnMut(u8)) -> Result<FirmwareSources, String> {
+    use super::release::{github, store};
+    let zip = github::download(&av.zip, |done, total| percent((done * 100 / total).min(99) as u8))
+        .map_err(|e| format!("download of the firmware: {e}"))?;
+    let dir = store::install(&crate::paths::firmware_dir(), &av.tag, &zip, av.zip_sha256.as_deref(), &av.manifest)?;
     let s = FirmwareSources::from_dir(&dir);
     shared.set_sources(s.clone());
     let mut rel = shared.release();
@@ -262,6 +268,14 @@ mod marker_tests {
     }
 }
 
+/// Nothing to install: says why (the GitHub lookup when releases are used, else the missing file).
+fn no_firmware(shared: &Shared, src: &FirmwareSources) -> String {
+    match shared.release().status.clone() {
+        Some(s) => format!("{}: {s}", super::NO_FIRMWARE),
+        None => format!("{}: {} not found", super::NO_FIRMWARE, src.dsp_app.display()),
+    }
+}
+
 #[cfg(not(feature = "github"))]
 fn prepare_release(src: &FirmwareSources, _shared: &Shared, _host: &mut UiHost) -> Run<FirmwareSources> {
     Ok(src.clone())
@@ -274,6 +288,9 @@ pub fn run(flow: &Flow, src: &FirmwareSources, shared: &Shared, host: &mut UiHos
     let fresh;
     let src = if matches!(flow, Flow::First | Flow::Update) {
         fresh = prepare_release(src, shared, host)?;
+        if !fresh.dsp_app.is_file() {
+            return fail(no_firmware(shared, &fresh), false);
+        }
         &fresh
     } else {
         src
