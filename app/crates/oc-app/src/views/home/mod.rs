@@ -1,5 +1,6 @@
 mod photo;
 mod profiles;
+mod app_update;
 pub(crate) mod update;
 mod volume;
 

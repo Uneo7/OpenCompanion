@@ -140,6 +140,9 @@ pub(super) fn refresh_release(shared: &Shared) -> Option<Targets> {
     let cached = store::latest(&root);
     let fetched = github::find(&api, &repo);
     let mut rel = shared.release();
+    if let Ok(av) = &fetched {
+        rel.app_update = app_update(av, env!("CARGO_PKG_VERSION"));
+    }
     match fetched {
         Ok(av) if !av.manifest.app_supported(env!("CARGO_PKG_VERSION")) => {
             rel.status = Some(super::host::ReleaseStatus::NeedsApp { tag: av.tag.clone(), min: av.manifest.min_app_version.clone() });
@@ -172,6 +175,17 @@ pub(super) fn refresh_release(shared: &Shared) -> Option<Targets> {
         }
     }
     Some(local_targets(&shared.sources()))
+}
+
+/// The release's tag (`vX.Y.Z`) newer than this app: offered for download.
+#[cfg(feature = "github")]
+fn app_update(av: &super::release::github::Available, app: &str) -> Option<super::AppUpdate> {
+    let v = av.tag.trim_start_matches('v');
+    super::release::manifest::semver_lt(app, v).then(|| super::AppUpdate {
+        version: v.to_owned(),
+        url: av.url.clone(),
+        needed_by_firmware: (!av.manifest.app_supported(app)).then(|| av.tag.clone()),
+    })
 }
 
 #[cfg(not(feature = "github"))]
@@ -241,5 +255,35 @@ mod tests {
         assert!(dsp_available(&versions::Running::Ours(Some("OC0.0.1".into())), Some("0.1.0+2")));
         let c = UpdateCheck::Done(vec![ChipUpdate { chip: Chip::Usb, from: None, from_stock: false, from_probable: false, to: None, available: true }]);
         assert!(c.available() && c.chip(Chip::Dsp).is_none());
+    }
+}
+
+#[cfg(all(test, feature = "github"))]
+mod app_update_tests {
+    use super::super::release::github::{Asset, Available};
+    use super::super::release::manifest::{FileEntry, Manifest, FILES};
+
+    fn release(tag: &str, min_app: &str) -> Available {
+        let manifest = Manifest {
+            format: "opencompanion-firmware".into(),
+            manifest_version: 1,
+            dsp_version: "1.0.1+1".into(),
+            tas_version: "1.0.1".into(),
+            min_app_version: min_app.into(),
+            files: FILES.iter().map(|p| FileEntry { path: (*p).into(), size: 1, sha256: "0".repeat(64) }).collect(),
+        };
+        let zip = Asset { name: "z".into(), browser_download_url: "u".into(), size: 1, digest: None };
+        Available { tag: tag.into(), manifest, zip, zip_sha256: None, url: format!("https://github.com/o/r/releases/tag/{tag}") }
+    }
+
+    #[test]
+    fn a_newer_tag_is_an_app_update() {
+        let u = super::app_update(&release("v1.0.2", "1.0.0"), "1.0.1").unwrap();
+        assert_eq!((u.version.as_str(), u.needed_by_firmware), ("1.0.2", None));
+        assert!(u.url.ends_with("/v1.0.2"));
+        let needs = super::app_update(&release("v1.1.0", "1.1.0"), "1.0.1").unwrap();
+        assert_eq!(needs.needed_by_firmware.as_deref(), Some("v1.1.0"), "the firmware needs the new app");
+        assert!(super::app_update(&release("v1.0.1", "1.0.0"), "1.0.1").is_none(), "same version");
+        assert!(super::app_update(&release("v1.0.0", "1.0.0"), "1.0.1").is_none(), "older");
     }
 }

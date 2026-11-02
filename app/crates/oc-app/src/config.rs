@@ -29,6 +29,9 @@ pub struct AppConfig {
     /// The update offer the user hid on Home (its target versions): shown again for another version.
     #[serde(default)]
     pub dismissed_update: Option<String>,
+    /// The app version whose download offer the user hid on Home.
+    #[serde(default)]
+    pub dismissed_app_update: Option<String>,
 }
 
 impl AppConfig {
@@ -79,6 +82,10 @@ pub fn set_theme(theme: ThemePref) -> io::Result<()> {
     update(|c| c.theme = theme)
 }
 
+pub fn set_dismissed_app_update(version: &str) -> io::Result<()> {
+    update(|c| c.dismissed_app_update = Some(version.to_owned()))
+}
+
 pub fn set_dismissed_update(key: &str) -> io::Result<()> {
     update(|c| c.dismissed_update = Some(key.to_owned()))
 }
@@ -98,7 +105,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("oc-app-config-{}", std::process::id()));
         let p = dir.join("sub").join("config.json");
         assert_eq!(AppConfig::load_from(&p), AppConfig::default());
-        let c = AppConfig { lang: Some(Lang::En), theme: ThemePref::Light, firmware_dir: Some("fw".into()), dismissed_update: Some("DSP=0.2.6".into()) };
+        let c = AppConfig { lang: Some(Lang::En), theme: ThemePref::Light, firmware_dir: Some("fw".into()), dismissed_update: Some("DSP=0.2.6".into()), dismissed_app_update: Some("1.0.2".into()) };
         c.save_to(&p).unwrap();
         assert_eq!(AppConfig::load_from(&p), c);
         let json = std::fs::read_to_string(&p).unwrap();

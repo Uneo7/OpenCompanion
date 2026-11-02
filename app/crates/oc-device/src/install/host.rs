@@ -47,10 +47,20 @@ impl std::fmt::Display for ReleaseStatus {
     }
 }
 
+/// A newer app on GitHub (release builds): its version, the release page, and the firmware tag that needs it
+/// (that firmware is not used before the app is updated).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppUpdate {
+    pub version: String,
+    pub url: String,
+    pub needed_by_firmware: Option<String>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct ReleaseState {
     pub remote: Option<(String, String)>,
     pub status: Option<ReleaseStatus>,
+    pub app_update: Option<AppUpdate>,
     #[cfg(feature = "github")]
     pub pending: Option<super::release::github::Available>,
 }

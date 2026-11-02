@@ -430,5 +430,8 @@
   "inst.err.no_fw": "Aucun firmware à installer : {why}",
   "inst.restore.stock": "L'enceinte a déjà le firmware Bose® : rien à restaurer",
   "conn.busy": "L'enceinte est utilisée par une autre application (OpenCompanion déjà ouvert ou l'application Bose®). Nouvel essai automatique.",
-  "conn.inaccessible": "Impossible d'ouvrir l'enceinte : {error}. Nouvel essai automatique."
+  "conn.inaccessible": "Impossible d'ouvrir l'enceinte : {error}. Nouvel essai automatique.",
+  "home.app_update.available": "Nouvelle version de l'application {version}",
+  "home.app_update.needed": "requise pour le firmware {tag}",
+  "home.app_update.go": "Télécharger"
 }

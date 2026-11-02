@@ -57,6 +57,10 @@ impl InstallController {
         super::flow::set_download_step(cfg!(feature = "github"));
     }
 
+    pub fn app_update(&self) -> Option<super::AppUpdate> {
+        self.shared.release().app_update.clone()
+    }
+
     pub fn release_status(&self) -> Option<super::host::ReleaseStatus> {
         self.shared.release().status.clone()
     }

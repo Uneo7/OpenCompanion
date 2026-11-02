@@ -21,7 +21,7 @@ pub use backup::{latest as latest_backup, today};
 pub use check::{ChipUpdate, UpdateCheck};
 pub use controller::InstallController;
 pub use flow::{Chip, Flow, StepDef, StepId};
-pub use host::{classify, Notice, ReleaseStatus, Signal};
+pub use host::{classify, AppUpdate, Notice, ReleaseStatus, Signal};
 pub use release_error::{ReleaseError, NO_FIRMWARE};
 pub use oc_install::Plan;
 pub use runner::restore_in_progress;

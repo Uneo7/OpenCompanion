@@ -31,7 +31,7 @@ pub fn sha256_hex(data: &[u8]) -> String {
 }
 
 /// `a` < `b` on `major.minor.patch` (anything after `+` or `-` ignored).
-fn semver_lt(a: &str, b: &str) -> bool {
+pub(crate) fn semver_lt(a: &str, b: &str) -> bool {
     let parse = |v: &str| -> Vec<u32> {
         v.split(['+', '-']).next().unwrap_or("").split('.').map(|p| p.parse().unwrap_or(0)).collect()
     };

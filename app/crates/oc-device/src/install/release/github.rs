@@ -30,6 +30,9 @@ pub struct Release {
     pub tag_name: String,
     #[serde(default)]
     pub assets: Vec<Asset>,
+    /// The release page (what "Download" opens).
+    #[serde(default)]
+    pub html_url: String,
     #[serde(default)]
     pub draft: bool,
     #[serde(default)]
@@ -43,6 +46,7 @@ pub struct Available {
     pub zip: Asset,
     /// Expected SHA-256 of the zip (from the `.sha256` asset, else the API's `digest`).
     pub zip_sha256: Option<String>,
+    pub url: String,
 }
 
 fn agent() -> ureq::Agent {
@@ -124,7 +128,7 @@ pub fn available(release: &Release) -> Result<Available, ReleaseError> {
         Some(a) => get_text(&a.browser_download_url)?.split_whitespace().next().map(str::to_ascii_lowercase),
         None => zip.digest.as_deref().and_then(|d| d.strip_prefix("sha256:")).map(str::to_ascii_lowercase),
     };
-    Ok(Available { tag: release.tag_name.clone(), manifest, zip, zip_sha256 })
+    Ok(Available { tag: release.tag_name.clone(), manifest, zip, zip_sha256, url: release.html_url.clone() })
 }
 
 pub fn download(asset: &Asset, mut progress: impl FnMut(u64, u64)) -> Result<Vec<u8>, String> {

@@ -199,6 +199,11 @@ pub trait Device {
         None
     }
 
+    /// A newer app on GitHub (release builds; found by the update check).
+    fn app_update(&mut self) -> Option<oc_device::install::AppUpdate> {
+        self.installer().and_then(|i| i.app_update())
+    }
+
     /// What the update check found (the installer's; nothing without one).
     fn updates(&mut self) -> oc_device::install::UpdateCheck {
         self.installer().map(|i| i.updates()).unwrap_or_default()

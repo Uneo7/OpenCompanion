@@ -92,6 +92,17 @@ fn steps() -> Vec<Step> {
         sim.update_check = Some(update_offer());
         a.device = Box::new(sim);
     }));
+    // A newer app on GitHub that the newest firmware needs: shown before the firmware offer.
+    add("home-app-update", Box::new(|a, _| {
+        let mut sim = crate::model::SimDevice::new();
+        sim.update_check = Some(update_offer());
+        sim.app_update = Some(oc_device::install::AppUpdate {
+            version: "1.1.0".into(),
+            url: "https://github.com/Uneo7/OpenCompagnon/releases/tag/v1.1.0".into(),
+            needed_by_firmware: Some("v1.1.0".into()),
+        });
+        a.device = Box::new(sim);
+    }));
     add("settings-firmware-checking", Box::new(|a, _| {
         let mut sim = crate::model::SimDevice::new();
         sim.update_check = Some(oc_device::install::UpdateCheck::Running);

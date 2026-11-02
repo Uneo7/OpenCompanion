@@ -28,6 +28,7 @@ pub struct SimDevice {
     pub connection: Option<super::device::Connection>,
     /// Update check to report (scenarios, screenshots): the simulated speaker is up to date otherwise.
     pub update_check: Option<oc_device::install::UpdateCheck>,
+    pub app_update: Option<oc_device::install::AppUpdate>,
     restart: Option<(FirmwarePart, f64)>,
     notice: Option<String>,
 }
@@ -60,6 +61,7 @@ impl SimDevice {
             mode: DeviceMode::Surround51,
             connection: None,
             update_check: None,
+            app_update: None,
             restart: None,
             notice: None,
         }
@@ -240,6 +242,10 @@ impl Device for SimDevice {
 
     fn updates(&mut self) -> oc_device::install::UpdateCheck {
         self.update_check.clone().unwrap_or_default()
+    }
+
+    fn app_update(&mut self) -> Option<oc_device::install::AppUpdate> {
+        self.app_update.clone()
     }
 
     fn take_notice(&mut self) -> Option<String> {
