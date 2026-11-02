@@ -47,15 +47,15 @@ pub fn run_error(error: &str, release: Option<&ReleaseStatus>) -> Option<String>
 
 pub fn backup_failure(e: &str, release: Option<&ReleaseStatus>) -> String {
     if let Some(rest) = e.strip_prefix(NO_USB) {
-        t_with("fw.backup.err.usb", &[("error", rest)])
+        t_with("fw.backup.err.usb", &[("error", &rest)])
     } else if let Some(rest) = e.strip_prefix(NOT_WRITABLE) {
-        t_with("fw.backup.err.dir", &[("error", rest)])
+        t_with("fw.backup.err.dir", &[("error", &rest)])
     } else if let Some(rest) = e.strip_prefix(NO_FIRMWARE) {
         no_firmware(rest, release)
     } else if e.contains("DSP") {
-        t_with("fw.backup.err.dsp", &[("error", e)])
+        t_with("fw.backup.err.dsp", &[("error", &e)])
     } else {
-        t_with("fw.backup.failed", &[("error", e)])
+        t_with("fw.backup.failed", &[("error", &e)])
     }
 }
 

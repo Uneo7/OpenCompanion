@@ -15,20 +15,31 @@ const BAR_H: f32 = 14.0;
 const LBL_H: f32 = 16.0;
 const ROW_H: f32 = 36.0;
 
+/// Why the flow cannot start or stopped, in the user's words ([`super::explain`]).
+#[derive(Default)]
+pub(crate) struct Why {
+    /// The start is refused (the restore without a verified backup, or on a speaker already stock).
+    pub blocked: Option<String>,
+    /// What stopped the flow, when known (else a lost connection).
+    pub failure: Option<String>,
+    /// The backup can be made again from here.
+    pub retry_backup: bool,
+}
+
 struct View<'a> {
     p: &'a Progress,
-    /// The flow needs a verified backup of the Bose firmware that is missing: the start is refused.
     blocked: bool,
+    why: Why,
     error: bool,
     critical: bool,
     /// The onboarding's first screen also says what will happen (backup, then install).
     onboarding: bool,
 }
 
-pub(crate) fn show(ui: &mut egui::Ui, p: &Progress, area: Rect, k: f32, blocked: bool, onboarding: bool) -> Option<Event> {
+pub(crate) fn show(ui: &mut egui::Ui, p: &Progress, area: Rect, k: f32, why: Why, onboarding: bool) -> Option<Event> {
     let ctx = ui.ctx().clone();
     let t = theme::get(&ctx);
-    let v = View { p, blocked, error: p.phase == Phase::Failed, critical: p.critical(), onboarding };
+    let v = View { p, blocked: why.blocked.is_some(), why, error: p.phase == Phase::Failed, critical: p.critical(), onboarding };
     let mut ev = None;
 
     let title = if onboarding && p.phase == Phase::Confirm { tr("onboard.title") } else { tr(p.flow.title_key()) };
@@ -166,8 +177,10 @@ fn status_line(ui: &egui::Ui, v: &View, x: f32, top: f32, t: &Theme) {
         Phase::Failed => {
             let chip = tr(group_key(v.p, v.p.error_chip_key()));
             let not_ours = v.p.error.as_deref().is_some_and(|e| e.contains(oc_device::install::identity::NOT_OURS));
-            let why = if v.blocked {
-                tr("fw.backup.missing").to_owned()
+            let why = if let Some(b) = &v.why.blocked {
+                b.clone()
+            } else if let Some(f) = &v.why.failure {
+                f.clone()
             } else if not_ours {
                 // A file refused by the identity checks: nothing was written.
                 tr("inst.err.not_ours").to_owned()
@@ -257,21 +270,25 @@ fn labels(ui: &egui::Ui, p: &Progress, rect: Rect, t: &Theme) {
 }
 
 fn note(ui: &egui::Ui, x: f32, top: f32, key: &str, kind: u8, t: &Theme) {
+    note_text(ui, x, top, &crate::i18n::t(key), kind, t);
+}
+
+fn note_text(ui: &egui::Ui, x: f32, top: f32, line: &str, kind: u8, t: &Theme) {
     let (ic_c, txt_c, w) = match kind {
         0 => (t.warn, t.text, W::SemiBold),
         1 => (t.a1, t.muted, W::Regular),
         _ => (t.danger_fill, t.danger_fill, W::SemiBold),
     };
     icons::WARN.paint(ui.painter(), Pos2::new(x + 9.0, top + 10.0), 18.0, ic_c);
-    text::line(ui.painter(), &crate::i18n::t(key), &st::inter_(14.0, w), txt_c, x + 26.0, top, 20.0, Align::Min);
+    text::line(ui.painter(), line, &st::inter_(14.0, w), txt_c, x + 26.0, top, 20.0, Align::Min);
 }
 
 fn action_rows(ui: &mut egui::Ui, v: &View, x: f32, top: f32, t: &Theme) -> Option<Event> {
     let ctx = ui.ctx().clone();
     match v.p.phase {
         Phase::Confirm => {
-            if v.blocked {
-                note(ui, x, top, "fw.backup.missing", 2, t);
+            if let Some(b) = &v.why.blocked {
+                note_text(ui, x, top, b, 2, t);
             } else {
                 note(ui, x, top, "inst.warn.unplug", 0, t);
             }
@@ -282,9 +299,18 @@ fn action_rows(ui: &mut egui::Ui, v: &View, x: f32, top: f32, t: &Theme) -> Opti
             let y = top + 20.0 + 14.0;
             let gw = go.size(&ctx).x;
             let mut ev = go.show(ui, Pos2::new(x, y), Id::new("inst-go")).clicked().then_some(Event::Start);
+            let mut next = x + gw + 14.0;
+            if v.why.retry_backup {
+                let retry = button::Button::new(tr("fw.backup.retry")).icon(icons::ROTATE).kind(button::Kind::Quiet);
+                let rw = retry.size(&ctx).x;
+                if retry.show(ui, Pos2::new(next, y), Id::new("inst-retry-backup")).clicked() {
+                    ev = Some(Event::RetryBackup);
+                }
+                next += rw + 14.0;
+            }
             if restore {
                 let other = button::Button::new(tr("onboard.reinstall")).kind(button::Kind::Quiet);
-                if other.show(ui, Pos2::new(x + gw + 14.0, y), Id::new("inst-reinstall")).clicked() {
+                if other.show(ui, Pos2::new(next, y), Id::new("inst-reinstall")).clicked() {
                     ev = Some(Event::Reinstall);
                 }
             } else if v.onboarding && v.p.flow == oc_device::install::Flow::First {

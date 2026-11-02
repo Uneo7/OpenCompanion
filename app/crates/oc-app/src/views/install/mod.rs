@@ -1,5 +1,6 @@
 pub mod backup;
 pub mod demo;
+pub mod explain;
 mod pace;
 mod parts;
 mod power_cycle;
@@ -259,6 +260,8 @@ pub(crate) enum Event {
     Finish,
     /// Back to the welcome page (first install, nothing written yet).
     Back,
+    /// The backup of the Bose firmware failed or is missing: try it again.
+    RetryBackup,
 }
 
 pub fn show(ui: &mut egui::Ui, cx: &mut Cx, content: Rect) {
@@ -295,8 +298,8 @@ pub fn show(ui: &mut egui::Ui, cx: &mut Cx, content: Rect) {
     let key = p.phase as u64 + 10 * u64::from(p.error.is_some());
     let k = motion::SPRING.at(motion::since(&ctx, Id::new("inst-phase"), key, 0.22));
     let area = Rect::from_min_size(Pos2::new(content.left(), content.top()), Vec2::new(content.width(), content.height()));
-    let blocked = (p.phase == Phase::Confirm || (p.phase == Phase::Failed && !p.can_resume)) && backup::blocks(&p.flow, &backup::backup_state(cx));
-    if let Some(ev) = parts::show(ui, &p, area, k, blocked, onboarding(&ctx)) {
+    let why = why(cx, &p);
+    if let Some(ev) = parts::show(ui, &p, area, k, why, onboarding(&ctx)) {
         handle(&ctx, cx, ev, now);
     }
 }
@@ -334,6 +337,22 @@ pub(crate) fn press(ctx: &Context, cx: &mut Cx, ev: Event) {
     handle(ctx, cx, ev, 0.0);
 }
 
+/// Why the flow cannot start or stopped ([`explain`]); the restore also refuses a speaker already stock.
+fn why(cx: &mut Cx, p: &Progress) -> parts::Why {
+    let release = cx.device.installer().and_then(|i| i.release_status());
+    let state = backup::backup_state(cx);
+    let asks = p.phase == Phase::Confirm || (p.phase == Phase::Failed && !p.can_resume);
+    let stock = cx.device.connection() == crate::model::Connection::Stock;
+    let blocked = if asks && p.flow == Flow::Restore {
+        explain::restore_blocker(&state, stock, cx.device.restore_pending(), release.as_ref())
+    } else {
+        None
+    };
+    let failure = p.error.as_deref().and_then(|e| explain::run_error(e, release.as_ref()));
+    let retry_backup = blocked.is_some() && matches!(state, oc_device::install::BackupState::Missing | oc_device::install::BackupState::Failed(_));
+    parts::Why { blocked, failure, retry_backup }
+}
+
 fn handle(ctx: &Context, cx: &mut Cx, ev: Event, now: f64) {
     let demo = state::with(ctx, |s| s.install.as_ref().is_some_and(|x| x.demo.is_some()));
     match ev {
@@ -358,6 +377,9 @@ fn handle(ctx: &Context, cx: &mut Cx, ev: Event, now: f64) {
         }
         Event::Guide => cx.act(Action::View(super::actions::ViewAction::RecoveryGuide)),
         Event::Back => set_page(ctx, Page::Welcome),
+        Event::RetryBackup => {
+            backup::request(cx);
+        }
         // After the onboarding the app opens on Home; after an install from Settings, back to Firmware.
         // A completed restore ends with the mains power cycle (its own page), then the welcome.
         Event::Finish if progress(ctx, cx).is_some_and(|p| p.flow == Flow::Restore && p.phase == Phase::Done) => {

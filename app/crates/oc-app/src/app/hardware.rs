@@ -70,6 +70,7 @@ impl App {
             return;
         }
         self.ui.hw.connection = Some(c.clone());
+        oc_device::install::log_file::append(&[format!("speaker: {c:?}")]);
         match c {
             // Bose firmware (or a mix): the installer view opens by itself as the onboarding (views::install).
             // Every connection of a ready speaker compares its firmware with the app's.

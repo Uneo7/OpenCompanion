@@ -475,3 +475,19 @@ fn a_cancelled_install_returns_to_settings() {
     assert_eq!(app.ui.screen, Screen::Settings);
     assert_eq!(app.ui.settings.pane, Pane::Firmware);
 }
+
+#[test]
+fn an_edit_over_the_boost_limit_stops_at_it() {
+    use crate::model::{boost, Band};
+    let (mut app, ctx) = app();
+    run(&mut app, &ctx, Action::ActivateProfile(1));
+    app.ui.eq.draft.get_mut(Target::Global).push(Band::new(BandType::Peak, 1000.0, 12.0, 4.0));
+    run(&mut app, &ctx, Action::Edited(Change::Struct));
+    assert!(!app.ui.eq.limited);
+    // A second +12 dB bell on the same frequency (a drag): stopped at +15 dB.
+    app.ui.eq.draft.get_mut(Target::Global).push(Band::new(BandType::Peak, 1000.0, 12.0, 4.0));
+    run(&mut app, &ctx, Action::Edited(Change::Value));
+    assert!(app.ui.eq.limited);
+    assert!(boost::peak(app.ui.eq.draft.get(Target::Global)) <= boost::LIMIT + 0.05);
+    assert_eq!(app.ui.eq.draft.get(Target::Global)[0].gain, 12.0, "the first band is kept");
+}

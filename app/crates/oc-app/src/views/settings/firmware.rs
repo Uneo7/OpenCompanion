@@ -1,5 +1,5 @@
 use eframe::egui::{self, Align, Id, Pos2, Rect, Vec2};
-use oc_device::install::{Chip, Flow, ReleaseStatus, UpdateCheck};
+use oc_device::install::{Chip, Flow, UpdateCheck};
 
 use super::rows::{self, Page};
 use crate::app::actions::Action;
@@ -81,7 +81,7 @@ pub fn show(ui: &mut egui::Ui, cx: &mut Cx, p: &mut Page) {
     if cfg!(feature = "release-updates") {
         if let Some(rs) = cx.device.installer().and_then(|i| i.release_status()) {
             let r = p.block(18.0);
-            text::line(ui.painter(), &release_line(&rs), &st::sec(W::Regular), t.muted, r.left(), r.top(), 18.0, Align::Min);
+            text::line(ui.painter(), &install::explain::release_line(&rs), &st::sec(W::Regular), t.muted, r.left(), r.top(), 18.0, Align::Min);
         }
     }
 
@@ -89,14 +89,22 @@ pub fn show(ui: &mut egui::Ui, cx: &mut Cx, p: &mut Page) {
     let r = p.list(ui, &[60.0])[0];
     let x = rows::row_icon(ui, r, icons::DRIVE);
     let backup = install::backup::backup_state(cx);
-    let sub = install::backup::status_text(&backup);
+    let release = cx.device.installer().and_then(|i| i.release_status());
+    let stock = cx.device.connection() == crate::model::Connection::Stock;
+    let restore_why = install::explain::restore_blocker(&backup, stock, cx.device.restore_pending(), release.as_ref());
+    // Saved but useless (the speaker already runs the Bose firmware): the row says why the restore is off.
+    let sub = match (&backup, &restore_why) {
+        (oc_device::install::BackupState::Saved { .. }, Some(why)) => format!("{} · {why}", install::backup::status_text(&backup)),
+        (oc_device::install::BackupState::Failed(e), _) => install::explain::backup_failure(e, release.as_ref()),
+        _ => install::backup::status_text(&backup),
+    };
     rows::row_text(ui, x, r.center().y, tr("settings.firmware.backup_desc"), Some(&sub), None);
     let save = button::Button::new(tr("settings.firmware.backup_now")).small();
     let sw = save.size(&ctx).x;
     if save.show(ui, Pos2::new(r.right() - sw, r.center().y - 15.0), Id::new("bk-now")).clicked() && !install::backup::request(cx) {
         cx.act(Action::Backup);
     }
-    let blocked = install::backup::blocks(&Flow::Restore, &backup);
+    let blocked = restore_why.is_some() || install::backup::blocks(&Flow::Restore, &backup);
     let restore = button::Button::new(tr("settings.firmware.restore")).small().kind(button::Kind::Danger).enabled(!blocked);
     let rw = restore.size(&ctx).x;
     if restore.show(ui, Pos2::new(r.right() - sw - 16.0 - rw, r.center().y - 15.0), Id::new("bk-restore")).clicked() {
@@ -104,12 +112,3 @@ pub fn show(ui: &mut egui::Ui, cx: &mut Cx, p: &mut Page) {
     }
 }
 
-fn release_line(s: &ReleaseStatus) -> String {
-    match s {
-        ReleaseStatus::InUse { tag } => t_with("fw.release.in_use", &[("tag", tag)]),
-        ReleaseStatus::Available { tag } => t_with("fw.release.available", &[("tag", tag)]),
-        ReleaseStatus::NeedsApp { tag, min } => t_with("fw.release.needs_app", &[("tag", tag), ("min", min)]),
-        ReleaseStatus::Offline { cached: Some(tag), .. } => t_with("fw.release.offline", &[("tag", tag)]),
-        ReleaseStatus::Offline { cached: None, .. } => tr("fw.release.offline.none").to_owned(),
-    }
-}
