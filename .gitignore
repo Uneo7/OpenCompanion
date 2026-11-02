@@ -2,4 +2,4 @@
 /firmware/**/build/
 # Release packages (app/scripts/package_app.*, package_firmware.*).
 /app/dist/
-/app/target/
+/app/crates/target/
