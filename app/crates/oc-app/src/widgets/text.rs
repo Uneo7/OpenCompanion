@@ -134,6 +134,25 @@ pub fn width(ctx: &Context, s: &str, style: &Style) -> f32 {
     galley(ctx, s, style, Color32::WHITE).size().x
 }
 
+/// `s` shortened with an ellipsis so that it fits in `max` (unchanged when it fits).
+pub fn elide(ctx: &Context, s: &str, style: &Style, max: f32) -> String {
+    if width(ctx, s, style) <= max {
+        return s.to_owned();
+    }
+    let chars: Vec<char> = s.chars().collect();
+    let (mut lo, mut hi) = (0, chars.len());
+    while lo < hi {
+        let mid = (lo + hi).div_ceil(2);
+        let cand: String = chars[..mid].iter().collect::<String>().trim_end().to_owned() + "…";
+        if width(ctx, &cand, style) <= max {
+            lo = mid;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    chars[..lo].iter().collect::<String>().trim_end().to_owned() + "…"
+}
+
 /// Paints one line in the CSS line box `[top, top + line_h]`, anchored at `x` (left, centre or right).
 #[allow(clippy::too_many_arguments)]
 pub fn line(painter: &Painter, s: &str, style: &Style, color: Color32, x: f32, top: f32, line_h: f32, align: Align) -> Rect {

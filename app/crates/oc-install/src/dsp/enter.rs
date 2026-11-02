@@ -120,10 +120,28 @@ fn check_loader_area<L: Link + ?Sized>(console: &DspConsole<L>, b: &Loaders) -> 
     Ok(())
 }
 
+/// The only stock DSP revision whose RAM layout the RAM loader is built for.
+const HIJACK_REVISION: &str = "D01.01.01";
+
+fn not_hijacked(svm: &str, e: Error) -> Error {
+    match e {
+        Error::Cancelled => e,
+        e => Error::Refused(format!(
+            "the RAM loader could not take over this Bose DSP firmware ({svm}): {e}. Nothing was written: the speaker \
+             keeps its firmware (if it stopped answering, unplug it from the mains for 10 s)"
+        )),
+    }
+}
+
 fn hijack(link: &dyn Link, b: &Loaders, host: &mut dyn Host) -> Result<()> {
     let console = DspConsole::new(link);
     host.log("M1: checking that the RAM loader area still holds the stock .cinit table…");
     check_loader_area(&console, b)?;
+    // Read-only, before any RAM write: the hijack target must be the expected one.
+    let v = console.read_words(rl::HIJACK_FLAGS, 2)?;
+    if v[0] != 0x3 || v[1] != rl::HIJACK_ORIGINAL {
+        return refused(format!("unexpected hijack target (flags 0x{:x}, process 0x{:08x}): this Bose firmware layout is not supported", v[0], v[1]));
+    }
     host.log("M1: installing the RAM loader stub (BWW, verified with BRR)…");
     rl::install_stub(&console, &b.stub.segments, |l| host.log(&l))?;
     host.log("M1: hijacking the output meter…");
@@ -180,9 +198,14 @@ pub(crate) fn enter_updater(link: &dyn Link, b: &Loaders, host: &mut dyn Host, d
     for _ in 0..4 {
         rt = match rt {
             DspRuntime::Updater { .. } => return Ok(before),
-            DspRuntime::Stock { .. } => {
-                hijack(link, b, host)?;
-                load_updater(link, b, host)?
+            DspRuntime::Stock { svm } => {
+                // The RAM loader (and its handoff_capture of the stock TAS link state) uses fixed addresses of
+                // D01.01.01: never on another revision (the backup then uses the stock raw read).
+                if !svm.starts_with(HIJACK_REVISION) {
+                    return Err(not_hijacked(&svm, Error::Refused(format!("the RAM loader supports {HIJACK_REVISION} only"))));
+                }
+                // Only RAM is touched up to here: a failure leaves the EEPROMs as they were.
+                hijack(link, b, host).and_then(|()| load_updater(link, b, host)).map_err(|e| not_hijacked(&svm, e))?
             }
             DspRuntime::Stub { .. } | DspRuntime::Rescue { .. } => load_updater(link, b, host)?,
             DspRuntime::OcFirmware { .. } => leave_firmware(link, host, dry_run)?,

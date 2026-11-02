@@ -257,6 +257,8 @@ pub(crate) enum Event {
     Reinstall,
     Resume,
     Guide,
+    /// Copies the version and the end of the log (an unsupported Bose firmware: to report it).
+    CopyReport,
     Finish,
     /// Back to the welcome page (first install, nothing written yet).
     Back,
@@ -331,6 +333,24 @@ pub(crate) fn settle_cancel(ctx: &Context, cx: &mut Cx) -> bool {
     true
 }
 
+/// What to send for an unsupported Bose firmware: the versions, the error and the end of the log.
+pub(crate) fn report(p: &Progress, status: &crate::model::device::Status) -> String {
+    let mut out = format!(
+        "OpenCompanion {}\nDSP: {}\nUSB: {}\nflow: {:?}\nerror: {}\n\n",
+        env!("CARGO_PKG_VERSION"),
+        status.firmware_dsp,
+        status.firmware_usb,
+        p.flow,
+        p.error.as_deref().unwrap_or("-")
+    );
+    let tail = p.log.len().saturating_sub(40);
+    for l in &p.log[tail..] {
+        out.push_str(l);
+        out.push('\n');
+    }
+    out
+}
+
 /// Applies a button of the installer view (scenario tests).
 #[cfg(test)]
 pub(crate) fn press(ctx: &Context, cx: &mut Cx, ev: Event) {
@@ -376,6 +396,12 @@ fn handle(ctx: &Context, cx: &mut Cx, ev: Event, now: f64) {
             }
         }
         Event::Guide => cx.act(Action::View(super::actions::ViewAction::RecoveryGuide)),
+        Event::CopyReport => {
+            if let Some(p) = progress(ctx, cx) {
+                ctx.copy_text(report(&p, &cx.device.status()));
+                cx.ui.toast.show(ctx, tr("inst.err.copied"));
+            }
+        }
         Event::Back => set_page(ctx, Page::Welcome),
         Event::RetryBackup => {
             backup::request(cx);

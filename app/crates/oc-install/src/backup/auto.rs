@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use oc_protocol::Link;
-use oc_tas_image::BOSE_HEADER;
 
 use super::files::{list, save, BackupEntry, Content};
 use super::read::{read_dsp, read_tas, speaker_id};
@@ -30,7 +29,8 @@ pub fn ensure_stock_backup(root: &Path, tas: &dyn TasPort, dsp: &dyn Link, loade
     let existing = stock_backup_status(root);
     let header = tas.read(0, HEADER_LEN)?;
     let rt = detect(dsp);
-    let stock = header == BOSE_HEADER && matches!(rt, DspRuntime::Stock { .. });
+    // Any Bose revision: a stock-shaped USB controller header and a DSP answering as the Bose firmware.
+    let stock = super::files::is_stock_tas(&header) && matches!(rt, DspRuntime::Stock { .. });
     if !stock {
         return match existing {
             Some(entry) => Ok(StockBackup { entry, created: false }),
@@ -49,12 +49,23 @@ pub fn ensure_stock_backup(root: &Path, tas: &dyn TasPort, dsp: &dyn Link, loade
         }
         host.log(&format!("backup: a stock backup exists ({}) but holds another USB controller image.", e.dir.display()));
     }
+    host.log(&format!("backup: DSP answers {rt}"));
     let tas_bytes = read_tas(tas, host)?;
-    let dump = read_dsp(dsp, loaders, host)?;
-    if Content::of_tas(&tas_bytes) != Content::Stock || Content::of_dsp(&dump.bytes) != Content::Stock {
+    // The stock raw read first (any revision, no RAM loader); the RAM loader only where `d` is not answered.
+    let dsp_bytes = if super::raw::available(dsp) {
+        super::raw::read_u7001(dsp, host)?
+    } else {
+        host.log("backup: the stock raw EEPROM read does not answer: through the RAM loader");
+        read_dsp(dsp, loaders, host)?.bytes
+    };
+    if Content::of_tas(&tas_bytes) != Content::Stock || Content::of_dsp(&dsp_bytes) != Content::Stock {
         return refused("the EEPROMs read do not hold a complete stock Bose image: not saved as the stock backup");
     }
-    let entry = save(root, &speaker_id(&dump.bytes), &stamp_now(), Some(&tas_bytes), Some(&dump.bytes))?;
+    let entry = save(root, &speaker_id(&dsp_bytes), &stamp_now(), Some(&tas_bytes), Some(&dsp_bytes))?;
+    if let DspRuntime::Stock { svm } = &rt {
+        // Informative only (not part of the checksums): the Bose revision this backup was read from.
+        let _ = std::fs::write(entry.dir.join(super::files::VERSION_FILE), format!("{svm}\n"));
+    }
     host.log(&format!("backup: Bose firmware of both chips saved in {}", entry.dir.display()));
     Ok(StockBackup { entry, created: true })
 }

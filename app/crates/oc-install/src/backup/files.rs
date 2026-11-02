@@ -11,6 +11,19 @@ use crate::dsp::bundle::OP_DISABLE_CRC;
 use crate::error::{Error, Result};
 
 pub const TAS_FILE: &str = "u6002_tas.bin";
+
+/// Any stock Bose USB controller image (whatever its revision): an application header for 05A7:1020, without
+/// the OpenCompanion data area. With only the header: the header checks.
+pub fn is_stock_tas(b: &[u8]) -> bool {
+    use oc_tas_image::{data_area, DataType, Header};
+    const DATA_AREA: usize = 0x1800;
+    let Ok(h) = Header::parse(b) else { return false };
+    h.data_type == DataType::Application
+        && (h.vendor_id, h.product_id) == (0x05A7, 0x1020)
+        && b.get(DATA_AREA..DATA_AREA + 4) != Some(&data_area::MAGIC[..])
+}
+/// The stock firmware's `SVM` answer when the backup was read (e.g. `D01.01.03U01.01.04`).
+pub const VERSION_FILE: &str = "firmware-version.txt";
 pub const DSP_FILE: &str = "u7001_dsp.bin";
 pub const SUMS_FILE: &str = "checksums.txt";
 const TAS_SIZE: usize = crate::tas::EE_SIZE;
@@ -45,7 +58,7 @@ impl Content {
 
     pub fn of_tas(b: &[u8]) -> Self {
         match b.get(..BOSE_HEADER.len()) {
-            Some(h) if h == BOSE_HEADER => Self::Stock,
+            Some(h) if h == BOSE_HEADER || is_stock_tas(b) => Self::Stock,
             _ if b.len() > 3 && b[1] == 0x12 && b[2] == 0x12 && b[3] == 0x34 => Self::OpenCompanion,
             _ => Self::Other,
         }
@@ -106,6 +119,8 @@ pub struct BackupFiles {
     pub entry: BackupEntry,
     pub tas: Option<Vec<u8>>,
     pub dsp: Option<Vec<u8>>,
+    /// The stock firmware's `SVM` answer when the backup was read ([`VERSION_FILE`]; older backups: none).
+    pub firmware: Option<String>,
 }
 
 fn io(what: &str, p: &Path, e: std::io::Error) -> Error {
@@ -162,6 +177,7 @@ pub fn load(dir: &Path) -> Result<BackupFiles> {
         },
         tas: None,
         dsp: None,
+        firmware: fs::read_to_string(dir.join(VERSION_FILE)).ok().map(|s| s.trim().to_owned()).filter(|s| !s.is_empty()),
     };
     for line in sums.lines().filter(|l| !l.starts_with('#') && !l.trim().is_empty()) {
         let f: Vec<&str> = line.split_whitespace().collect();
@@ -213,6 +229,19 @@ mod tests {
         let p = std::env::temp_dir().join(format!("oc-backup-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&p);
         p
+    }
+
+    #[test]
+    fn any_stock_tas_revision_is_stock() {
+        let mut h = oc_tas_image::Header::parse(&BOSE_HEADER).unwrap();
+        h.firmware_version = 0x05; // a newer Bose soft update (01.01.04)
+        let mut ee = h.to_bytes();
+        ee.resize(8192, 0xFF);
+        assert!(is_stock_tas(&ee) && Content::of_tas(&ee) == Content::Stock);
+        ee[0x1800..0x1804].copy_from_slice(&oc_tas_image::data_area::MAGIC);
+        assert!(!is_stock_tas(&ee), "our data area: not stock");
+        h.data_type = oc_tas_image::DataType::Device;
+        assert!(!is_stock_tas(&h.to_bytes()));
     }
 
     #[test]

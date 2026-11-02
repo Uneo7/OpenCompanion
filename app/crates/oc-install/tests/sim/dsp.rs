@@ -28,6 +28,10 @@ pub struct Dsp {
     /// From the next boot on, `SVM` gets a garbled reply (a stale relay frame, as TAS 0.4.9 with the stock DSP).
     pub garble_after_boot: bool,
     garbled: bool,
+    /// The stock firmware's `SVM` answer (a Bose soft update changes it).
+    pub svm: &'static [u8],
+    /// The stock firmware answers the raw EEPROM read `d` (`[addr H][addr L][n]` -> n bytes).
+    pub raw_read: bool,
 }
 
 const ACK: u8 = 0x06;
@@ -43,7 +47,7 @@ fn le16(b: &[u8], o: usize) -> usize {
 
 impl Dsp {
     pub fn new(stock: Vec<u8>) -> Self {
-        Self { ee: stock, ram: vec![0; (RAM_HI - RAM_LO) as usize], run: DspRun::Dead, unlocked: false, ram_retained: true, rescue_flag: false, garble_after_boot: false, garbled: false }
+        Self { ee: stock, ram: vec![0; (RAM_HI - RAM_LO) as usize], run: DspRun::Dead, unlocked: false, ram_retained: true, rescue_flag: false, garble_after_boot: false, garbled: false, raw_read: false, svm: b"D01.01.01U01.01.03\r>" }
     }
 
     fn ram_range(&self, addr: u32, n: usize) -> Option<std::ops::Range<usize>> {
@@ -105,7 +109,7 @@ impl Speaker {
             return vec![0, 0];
         }
         if m.starts_with(b"SVM\r") {
-            return b"D01.01.01U01.01.03\r>".to_vec();
+            return self.dsp.svm.to_vec();
         }
         let d = &mut self.dsp;
         if m.starts_with(b"BRR") && m.len() >= 11 {

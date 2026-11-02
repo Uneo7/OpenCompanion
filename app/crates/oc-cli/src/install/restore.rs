@@ -50,7 +50,7 @@ pub fn run(a: RestoreArgs) -> anyhow::Result<()> {
     if do_dsp {
         let Some(image) = files.dsp.clone() else { bail!("the backup has no {DSP_FILE}") };
         let (stub, updater) = a.loaders.load()?;
-        let img = DspRestoreInputs { image, stub, updater };
+        let img = DspRestoreInputs { image, stub, updater, stock_svm: files.firmware.clone() };
         let rep = conn.with_dsp(|l| restore_dsp(l, &img, &mut host, DspRestoreOptions { dry_run: a.dry_run }))?;
         if rep.restored {
             println!("DSP restored: {} (U7001 CRC-32 0x{:08x})", rep.after, rep.crc32.unwrap_or(0));

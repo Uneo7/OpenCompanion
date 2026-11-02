@@ -94,8 +94,8 @@ impl HwDevice {
         self.check_after_install = true;
         // A power cycle is asked by its own page (views::install), not by a notice.
         if phase == Phase::Failed {
-            let error = self.installer.with_progress(|p| p.error.clone());
-            self.notice(format!("{} · {}", i18n::tr("inst.err.title"), error.unwrap_or_default()));
+            // The reason is on the installer's screen, in words; the English detail is in the log.
+            self.notice(i18n::tr("inst.err.title"));
         }
     }
 

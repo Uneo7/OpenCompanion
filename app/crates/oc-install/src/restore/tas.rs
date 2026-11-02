@@ -21,10 +21,11 @@ pub struct TasRestoreReport {
     pub restored: bool,
 }
 
-/// Refused unless the backup has the exact stock header.
+/// Refused unless the backup holds a stock Bose image (any revision: `is_stock_tas`); its CRC was checked when
+/// the backup was loaded.
 pub fn stock_tas_target(backup: &[u8]) -> Result<TasTarget> {
     let t = TasTarget::from_dump(backup)?;
-    if t.header != BOSE_HEADER {
+    if t.header != BOSE_HEADER && !crate::backup::files::is_stock_tas(backup) {
         return refused("the TAS backup does not hold the stock Bose header: it was not taken before the install");
     }
     Ok(t)
@@ -48,4 +49,20 @@ pub fn reboot_tas(link: &dyn OcLink, host: &mut dyn Host) -> Result<()> {
     link.call(cmd::REBOOT, &key(cmd::REBOOT), Duration::from_millis(500))
         .map(drop)
         .map_err(|e| Error::Device(format!("REBOOT: {e} (power-cycle the speaker instead)")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn any_stock_revision_backup_is_restorable() {
+        let mut h = oc_tas_image::Header::parse(&BOSE_HEADER).unwrap();
+        h.firmware_version = 0x05; // 01.01.04
+        let mut ee = h.to_bytes();
+        ee.resize(crate::tas::EE_SIZE, 0xFF);
+        assert!(stock_tas_target(&ee).is_ok());
+        ee[0x1800..0x1804].copy_from_slice(&oc_tas_image::data_area::MAGIC);
+        assert!(stock_tas_target(&ee).is_err(), "an OpenCompanion image is not a stock backup");
+    }
 }

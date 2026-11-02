@@ -26,6 +26,10 @@ impl Link for BoseLink {
                 Ok(r) => (b'E', r),
                 Err(()) => (b'E', b"ERROR1".to_vec()),
             },
+            b'd' if s.dsp.raw_read && s.dsp.run == super::dsp::DspRun::Stock && data.len() == 3 => {
+                let (a, n) = (usize::from(data[0]) << 8 | usize::from(data[1]), usize::from(data[2]));
+                (b'd', s.dsp.ee[a..a + n].to_vec())
+            }
             _ => (c, vec![]),
         };
         s.finish(fault).map_err(|_| lost(c))?;

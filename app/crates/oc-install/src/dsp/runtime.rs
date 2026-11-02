@@ -7,7 +7,6 @@ use std::time::Duration;
 use oc_protocol::Link;
 
 const TIMEOUT: Duration = Duration::from_millis(1000);
-pub const STOCK_DSP_VERSION: &str = "01.01.01";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DspRuntime {
@@ -69,8 +68,10 @@ fn from_svm(text: &str) -> DspRuntime {
     let t = text.trim_end_matches("\r>").trim_end_matches('\r');
     let version = t.strip_prefix('D').map(|r| r.split('U').next().unwrap_or(""));
     match version {
-        Some(v) if v == STOCK_DSP_VERSION => DspRuntime::Stock { svm: t.replace('\r', " ") },
         Some(v) if v.starts_with("OC") => DspRuntime::OcFirmware { version: v.to_string() },
+        // Any Bose revision (D01.01.01, the D01.01.03 soft update, ...): stock. What can be done with it is decided
+        // by content checks (RAM loader area, image layout), never by the version string.
+        Some(v) if !v.is_empty() => DspRuntime::Stock { svm: t.replace('\r', " ") },
         _ => DspRuntime::OtherFirmware { svm: t.replace('\r', " ") },
     }
 }
@@ -98,6 +99,8 @@ mod tests {
     fn svm_parsing() {
         assert!(matches!(from_svm("D01.01.01U01.01.03\r>"), DspRuntime::Stock { .. }));
         assert_eq!(from_svm("DOC0.0.1UOC-0.1.0\r>"), DspRuntime::OcFirmware { version: "OC0.0.1".into() });
-        assert!(matches!(from_svm("D02.00.00U01\r>"), DspRuntime::OtherFirmware { .. }));
+        assert!(matches!(from_svm("D01.01.03U01.01.04\r>"), DspRuntime::Stock { .. }), "a newer Bose soft update");
+        assert!(matches!(from_svm("D02.00.00U01\r>"), DspRuntime::Stock { .. }));
+        assert!(matches!(from_svm("garbage\r>"), DspRuntime::OtherFirmware { .. }));
     }
 }

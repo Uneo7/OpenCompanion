@@ -68,14 +68,25 @@ fn leave(u: &Updater, s: &RestoreSurvey, host: &mut dyn Host) -> DspRuntime {
     reboot(u, host)
 }
 
+/// `D01.01.03` of `D01.01.03U01.01.04` (the `U` part is the USB controller's, restored after the DSP).
+fn dsp_part(svm: &str) -> &str {
+    svm.split('U').next().unwrap_or(svm).trim()
+}
+
 fn finish(u: &Updater, img: &DspRestoreInputs, host: &mut dyn Host) -> Result<(DspRuntime, u32)> {
     let crc = verify_all(u, img, host)?;
     host.log("R5: rebooting the DSP from U7001…");
     let after = reboot(u, host);
     // U7001 is verified: a DSP that does not answer properly now does not undo that (warning, then the TAS).
-    let (after, ok) = settle_after_verify(u.link(), after, |rt| matches!(rt, DspRuntime::Stock { .. }), "the Bose DSP firmware", host);
+    let want = img.stock_svm.as_deref().map(dsp_part);
+    let is_backed_up = |rt: &DspRuntime| match rt {
+        DspRuntime::Stock { svm } => want.is_none_or(|w| dsp_part(svm) == w),
+        _ => false,
+    };
+    let (after, ok) = settle_after_verify(u.link(), after, is_backed_up, "the Bose DSP firmware", host);
     if !ok {
-        return Err(Error::Verify(format!("the Bose firmware did not answer SVM D01.01.01 after the reboot (DSP: {after})")));
+        let want = want.unwrap_or("D...");
+        return Err(Error::Verify(format!("the Bose firmware did not answer SVM {want} (the backed-up revision) after the reboot (DSP: {after})")));
     }
     Ok((after, crc))
 }

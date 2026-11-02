@@ -18,7 +18,7 @@ fn known(b: &DspBundle) -> Rc<Known> {
 }
 
 fn inputs(b: &DspBundle) -> DspRestoreInputs {
-    DspRestoreInputs { image: b.stock.clone(), stub: b.stub.clone(), updater: b.updater.clone() }
+    DspRestoreInputs { image: b.stock.clone(), stub: b.stub.clone(), updater: b.updater.clone(), stock_svm: None }
 }
 
 fn with_link<R>(sp: &Shared, f: impl FnOnce(&dyn oc_protocol::Link) -> R) -> R {
@@ -255,4 +255,22 @@ fn a_garbled_version_reply_after_a_verified_install_is_only_a_warning() {
     let rep = install(&BoseLink(sp.clone()), &b, &mut host, DspOptions::default()).expect("install goes on");
     assert!(rep.installed);
     assert!(host.log.iter().any(|l| l.starts_with("WARNING")));
+}
+
+#[test]
+fn the_restored_dsp_must_answer_the_backed_up_revision() {
+    let b = fixture::bundle(1, 1);
+    let sp = migrated(&b);
+    sp.borrow_mut().dsp.svm = b"D01.01.03U01.01.04\r>";
+    let img = DspRestoreInputs { stock_svm: Some("D01.01.03U01.01.04".into()), ..inputs(&b) };
+    let rep = run(&sp, &img, true, false).0.unwrap();
+    assert!(rep.restored);
+    assert_stock(&sp, &b);
+
+    // Another revision answers than the one backed up: reported, never taken for a success.
+    let sp = migrated(&b);
+    sp.borrow_mut().dsp.svm = b"D01.01.03U01.01.04\r>";
+    let img = DspRestoreInputs { stock_svm: Some("D01.01.01U01.01.03".into()), ..inputs(&b) };
+    let e = run(&sp, &img, true, false).0.unwrap_err().to_string();
+    assert!(e.contains("D01.01.01"), "{e}");
 }

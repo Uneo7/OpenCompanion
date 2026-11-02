@@ -36,12 +36,14 @@ impl Toast {
         let mut painter = ctx.layer_painter(LayerId::new(Order::Foreground, id));
         painter.set_opacity(k);
         let style = st::sec(W::Medium);
-        let tw = text::width(ctx, &self.message, &style);
+        // Never wider than the window: a long message is shortened.
+        let msg = text::elide(ctx, &self.message, &style, window.width() - 48.0 - 12.0 - 16.0 - 8.0 - 16.0);
+        let tw = text::width(ctx, &msg, &style);
         let w = 12.0 + 16.0 + 8.0 + tw + 16.0;
         let top = window.bottom() - 24.0 - 36.0 + 8.0 * (1.0 - k);
         let rect = Rect::from_min_size(Pos2::new(window.center().x - w / 2.0, top), Vec2::new(w, 36.0));
         painter.rect_filled(rect, 18.0, t.text);
         icons::CHECK_CIRCLE.paint(&painter, Pos2::new(rect.left() + 12.0 + 8.0, rect.center().y), 16.0, t.toast_ok);
-        text::line(&painter, &self.message, &style, t.bg, rect.left() + 36.0, rect.top(), 36.0, Align::Min);
+        text::line(&painter, &msg, &style, t.bg, rect.left() + 36.0, rect.top(), 36.0, Align::Min);
     }
 }

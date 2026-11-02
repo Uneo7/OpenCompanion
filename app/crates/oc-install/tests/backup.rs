@@ -42,6 +42,42 @@ fn ensure(sp: &Shared, b: &DspBundle, dir: &std::path::Path) -> oc_install::Resu
 }
 
 #[test]
+fn a_newer_bose_revision_is_backed_up_too() {
+    let b = fixture::bundle(1, 1);
+    let sp = Speaker::new(known(&b));
+    sp.borrow_mut().dsp.svm = b"D01.01.03U01.01.04\r>";
+    sp.borrow_mut().dsp.raw_read = true;
+    // Another RAM layout: the RAM loader could not take over; the raw read needs none.
+    let o = (oc_ramload::LOADER_LO - oc_ramload::RAM_LO) as usize;
+    sp.borrow_mut().dsp.ram[o..o + 0x400].fill(0xA5);
+    let dir = root("newer-rev");
+    let first = ensure(&sp, &b, &dir).unwrap();
+    assert!(first.created && first.entry.is_stock());
+    assert_eq!(sp.borrow().ee_writes, 0, "a backup writes nothing");
+    assert_eq!(load(&first.entry.dir).unwrap().dsp.unwrap(), b.stock, "U7001 read with `d`");
+    assert_eq!(sp.borrow().dsp.run, DspRun::Stock, "never hijacked");
+    let v = std::fs::read_to_string(first.entry.dir.join(backup::VERSION_FILE)).unwrap();
+    assert!(v.contains("D01.01.03U01.01.04"), "{v}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_revision_the_loader_cannot_take_over_fails_cleanly() {
+    let b = fixture::bundle(1, 1);
+    let sp = Speaker::new(known(&b));
+    sp.borrow_mut().dsp.svm = b"D01.01.03U01.01.04\r>";
+    // Another RAM layout: the loader area no longer holds the expected stock table.
+    let o = (oc_ramload::LOADER_LO - oc_ramload::RAM_LO) as usize;
+    sp.borrow_mut().dsp.ram[o..o + 0x400].fill(0xA5);
+    let dir = root("other-layout");
+    let e = ensure(&sp, &b, &dir).unwrap_err().to_string();
+    assert!(e.contains("D01.01.03") && e.contains("Nothing was written"), "{e}");
+    assert_eq!(sp.borrow().ee_writes, 0);
+    assert!(stock_backup_status(&dir).is_none(), "nothing saved");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn automatic_stock_backup_reads_the_speaker_once() {
     let b = fixture::bundle(1, 1);
     let sp = Speaker::new(known(&b));
@@ -133,7 +169,7 @@ fn full_cycle_backup_install_restore_from_the_saved_files() {
     sp.borrow_mut().power_cycle();
     assert_eq!(sp.borrow().tas.run, TasRun::Oc(0));
     let files = load(&entry.dir).unwrap();
-    let img = DspRestoreInputs { image: files.dsp.unwrap(), stub: b.stub.clone(), updater: b.updater.clone() };
+    let img = DspRestoreInputs { image: files.dsp.unwrap(), stub: b.stub.clone(), updater: b.updater.clone(), stock_svm: files.firmware.clone() };
     let oc = OcSim(sp.clone());
     restore_dsp(&OcRelay::new(&oc), &img, &mut host, DspRestoreOptions::default()).unwrap();
     restore_tas(&OcPort::new(&oc), &files.tas.unwrap(), &mut host, TasOptions::default()).unwrap();

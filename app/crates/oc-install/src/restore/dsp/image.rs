@@ -14,6 +14,9 @@ pub struct DspRestoreInputs {
     /// Only used when the stock firmware already runs (resume after R3).
     pub stub: LoadImage,
     pub updater: LoadImage,
+    /// `SVM` recorded with the backup (e.g. `D01.01.03U01.01.04`): the DSP must answer that revision after the
+    /// restore. `None` (older backups): any Bose revision.
+    pub stock_svm: Option<String>,
 }
 
 fn le32(b: &[u8], o: usize) -> u32 {

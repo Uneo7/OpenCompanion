@@ -56,7 +56,7 @@ pub fn status_text(s: &BackupState) -> String {
         BackupState::Saved { date: d, .. } => t_with("fw.backup.ok", &[("date", &date(d))]),
         BackupState::Running => tr("fw.backup.running").to_owned(),
         BackupState::Missing => tr("fw.backup.missing").to_owned(),
-        BackupState::Failed(e) => t_with("fw.backup.failed", &[("error", e)]),
+        BackupState::Failed(e) => super::explain::backup_failure(e, None),
     }
 }
 

@@ -145,7 +145,7 @@ fn restore(src: &FirmwareSources, conn: &Conn, host: &mut UiHost) -> Run<bool> {
         host.skip_chip(Chip::Dsp);
     } else {
         let (stub, updater) = src.loaders().or_else(|e| fail(e, false))?;
-        let img = DspRestoreInputs { image, stub, updater };
+        let img = DspRestoreInputs { image, stub, updater, stock_svm: files.firmware.clone() };
         let rep = conn.with_dsp(|l| restore_dsp(l, &img, host, DspRestoreOptions::default())).map_err(from_install)?;
         if !rep.restored {
             return fail(format!("the Bose DSP firmware is not running after the restore (DSP: {})", rep.after), true);

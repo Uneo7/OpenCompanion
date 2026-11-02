@@ -34,8 +34,26 @@ fn no_firmware(detail: &str, release: Option<&ReleaseStatus>) -> String {
     t_with("inst.err.no_fw", &[("why", &why)])
 }
 
+/// The Bose firmware version the installer does not know (`D01.01.03` from "unknown DSP firmware
+/// (D01.01.03U01.01.04)"), when that is why it stopped.
+pub fn unsupported_stock(error: &str) -> Option<String> {
+    let start = error.find("unknown DSP firmware (")? + "unknown DSP firmware (".len();
+    let inner = &error[start..];
+    let inner = &inner[..inner.find(')')?];
+    Some(inner.split('U').next().unwrap_or(inner).trim().to_owned())
+}
+
+/// The DSP did not answer (as opposed to answering something unknown).
+fn silent(e: &str) -> bool {
+    let e = e.to_ascii_lowercase();
+    ["not answer", "no answer", "no reply", "silent", "timeout", "timed out"].iter().any(|w| e.contains(w))
+}
+
 /// An install error the user can act on; `None`: a lost connection (the generic line).
 pub fn run_error(error: &str, release: Option<&ReleaseStatus>) -> Option<String> {
+    if let Some(v) = unsupported_stock(error) {
+        return Some(t_with("inst.err.unsupported", &[("version", &v)]));
+    }
     if let Some(rest) = error.strip_prefix(NO_FIRMWARE) {
         return Some(no_firmware(rest, release));
     }
@@ -45,17 +63,20 @@ pub fn run_error(error: &str, release: Option<&ReleaseStatus>) -> Option<String>
     None
 }
 
+/// Why the backup failed, in a few words (the English detail stays in the log).
 pub fn backup_failure(e: &str, release: Option<&ReleaseStatus>) -> String {
-    if let Some(rest) = e.strip_prefix(NO_USB) {
-        t_with("fw.backup.err.usb", &[("error", &rest)])
-    } else if let Some(rest) = e.strip_prefix(NOT_WRITABLE) {
-        t_with("fw.backup.err.dir", &[("error", &rest)])
+    if let Some(v) = unsupported_stock(e) {
+        t_with("inst.err.unsupported", &[("version", &v)])
+    } else if e.starts_with(NO_USB) {
+        tr("fw.backup.err.usb").to_owned()
+    } else if e.starts_with(NOT_WRITABLE) {
+        tr("fw.backup.err.dir").to_owned()
     } else if let Some(rest) = e.strip_prefix(NO_FIRMWARE) {
         no_firmware(rest, release)
-    } else if e.contains("DSP") {
-        t_with("fw.backup.err.dsp", &[("error", &e)])
+    } else if silent(e) {
+        tr("fw.backup.err.dsp").to_owned()
     } else {
-        t_with("fw.backup.failed", &[("error", &e)])
+        tr("fw.backup.failed").to_owned()
     }
 }
 
@@ -81,12 +102,24 @@ mod tests {
         let st = ReleaseStatus::Unavailable { cached: None, error: ReleaseError::NoRelease { repo: "o/r".into() } };
         let line = run_error(&format!("{NO_FIRMWARE}: whatever"), Some(&st)).unwrap();
         assert!(line.contains("o/r"), "{line}");
-        assert!(run_error(&format!("backup: {NO_USB}access denied"), None).unwrap().contains("access denied"));
+        assert!(!run_error(&format!("backup: {NO_USB}access denied"), None).unwrap().contains("access denied"), "no raw text");
         assert!(run_error("the DSP stopped answering", None).is_none());
         assert!(restore_blocker(&BackupState::Missing, true, false, None).is_some());
         assert!(restore_blocker(&BackupState::Saved { date: "d".into(), dir: Default::default(), created: false }, true, true, None).is_none());
         let failed = restore_blocker(&BackupState::Failed(format!("{NOT_WRITABLE}/x: denied")), false, false, None).unwrap();
-        assert!(failed.contains("/x: denied"), "{failed}");
+        assert!(!failed.contains("denied"), "{failed}");
         assert!(!release_error(&ReleaseError::Http { status: 502 }).is_empty());
+    }
+
+    #[test]
+    fn an_unknown_bose_version_is_named_not_called_silent() {
+        let field = "backup: refused: no backup of the Bose firmware exists and the speaker no longer runs it (DSP: unknown DSP \
+                     firmware (D01.01.03U01.01.04)): it cannot be read any more";
+        assert_eq!(unsupported_stock(field).as_deref(), Some("D01.01.03"));
+        let line = run_error(field, None).unwrap();
+        assert!(line.contains("D01.01.03") && !line.contains("refused"), "{line}");
+        assert_eq!(backup_failure("the DSP did not answer (timeout)", None), tr("fw.backup.err.dsp"));
+        assert_eq!(backup_failure("something else in English", None), tr("fw.backup.failed"));
+        assert_eq!(unsupported_stock("the DSP did not answer"), None);
     }
 }

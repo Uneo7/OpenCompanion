@@ -208,6 +208,9 @@ fn status_line(ui: &egui::Ui, v: &View, x: f32, top: f32, t: &Theme) {
     if !rest.is_empty() {
         let base = top + text::baseline_in_box(ui.ctx(), &main, LINE_H);
         let st_ = base - text::baseline_in_box(ui.ctx(), &sub, 20.0);
+        // Within the content width: a long reason is shortened with an ellipsis.
+        let max = ui.max_rect().right() - (r.right() + 14.0) - 8.0;
+        let rest = text::elide(ui.ctx(), &rest, &sub, max.max(40.0));
         text::line(ui.painter(), &rest, &sub, t.muted, r.right() + 14.0, st_, 20.0, Align::Min);
     }
 }
@@ -326,10 +329,20 @@ fn action_rows(ui: &mut egui::Ui, v: &View, x: f32, top: f32, t: &Theme) -> Opti
             let guide = button::Button::new(tr("inst.err.guide")).icon(icons::INFO).kind(button::Kind::Quiet);
             let gw = guide.size(&ctx).x;
             let mut ev = guide.show(ui, Pos2::new(x, top), Id::new("inst-guide")).clicked().then_some(Event::Guide);
+            let mut bx = x + gw + 14.0;
             if v.p.can_resume {
                 let resume = button::Button::new(tr("inst.err.resume")).icon(icons::ROTATE).kind(button::Kind::Primary);
-                if resume.show(ui, Pos2::new(x + gw + 14.0, top), Id::new("inst-resume")).clicked() {
+                let rw = resume.size(&ctx).x;
+                if resume.show(ui, Pos2::new(bx, top), Id::new("inst-resume")).clicked() {
                     ev = Some(Event::Resume);
+                }
+                bx += rw + 14.0;
+            }
+            // An unknown Bose version: the report to send, as an extra.
+            if v.p.error.as_deref().and_then(super::explain::unsupported_stock).is_some() {
+                let copy = button::Button::new(tr("inst.err.copy_report")).icon(icons::COPY).kind(button::Kind::Quiet);
+                if copy.show(ui, Pos2::new(bx, top), Id::new("inst-copy")).clicked() {
+                    ev = Some(Event::CopyReport);
                 }
             }
             ev
