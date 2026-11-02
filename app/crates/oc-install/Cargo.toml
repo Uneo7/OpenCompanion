@@ -1,0 +1,15 @@
+[package]
+name = "oc-install"
+description = "OpenCompanion installation and update chain (DSP boot-chain migration, TAS EEPROM flashing, status)"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+crc32fast.workspace = true
+dirs.workspace = true
+oc-ais.workspace = true
+oc-protocol.workspace = true
+oc-ramload.workspace = true
+oc-tas-image.workspace = true

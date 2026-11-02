@@ -1,0 +1,184 @@
+name: Release
+
+# A `v<version>` tag push builds, tests and packages everything on native runners, then creates a DRAFT GitHub
+# release with all assets and checksums. Publishing the draft is a manual step (the app's update check only sees
+# published releases). Packages are not code-signed (README.md, "First run of an unsigned build").
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  version:
+    name: Tag matches the app version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' app/Cargo.toml | head -n 1)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match app/Cargo.toml version $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  # Build + tests on Windows, macOS (arm64 and x86_64) and Linux (x86_64 and aarch64): the CI workflow itself.
+  test:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app -> target/package-app
+      - name: Package (portable zip, oc)
+        shell: pwsh
+        run: ./scripts/package_app.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-windows
+          path: app/dist/*
+          if-no-files-found: error
+
+  macos:
+    needs: test
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app -> target/package-app
+      - name: Package (universal OpenCompanion.app, ad-hoc signed; zip, dmg, oc)
+        run: bash scripts/package_app.sh macos
+      - name: Check the bundle
+        run: |
+          app=target/package-app/stage/macos/OpenCompanion.app
+          lipo -archs "$app/Contents/MacOS/opencompanion"
+          codesign --verify --strict --verbose=2 "$app"
+          plutil -lint "$app/Contents/Info.plist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-macos
+          path: app/dist/*
+          if-no-files-found: error
+
+  linux:
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
+      # Both architectures are linked by zig against glibc 2.31 (Debian 11 sysroot): one AppImage runs on any
+      # distribution from that era on, which a native build on this runner (newer glibc) would not.
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: 0.14.0
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild --locked
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app -> target/package-app
+      - name: Package (AppImage x86_64 + aarch64, oc, udev rule)
+        run: bash scripts/package_app.sh linux-x86_64 linux-aarch64
+      - name: Check the binaries (glibc floor, AppImage contents)
+        run: |
+          for a in x86_64 aarch64; do
+            bin=target/package-app/$a-unknown-linux-gnu/release/opencompanion
+            max=$(readelf -W --dyn-syms "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 1)
+            echo "$a: needs $max"
+            [ "$(printf '%s\nGLIBC_2.31\n' "$max" | sort -V | tail -n 1)" = GLIBC_2.31 ] || { echo "::error::$a needs $max"; exit 1; }
+          done
+          cd "$RUNNER_TEMP"
+          "$GITHUB_WORKSPACE"/app/dist/OpenCompanion-*-linux-x86_64.AppImage --appimage-extract >/dev/null
+          test -x squashfs-root/usr/bin/opencompanion
+          test -f squashfs-root/opencompanion.desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-linux
+          path: app/dist/*
+          if-no-files-found: error
+
+  # From the committed firmware/release/ files (firmware/release/README.md): CI cannot build the DSP firmware
+  # (TI compiler).
+  firmware:
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Linux build dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libudev-dev libasound2-dev pkg-config
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app -> target/package
+      - name: Package the firmware archive
+        run: bash scripts/package_firmware.sh --from ../firmware/release --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-firmware
+          path: app/dist/*
+          if-no-files-found: error
+
+  release:
+    needs: [version, windows, macos, linux, firmware]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: packages-*
+          path: assets
+          merge-multiple: true
+      - name: Checksums
+        working-directory: assets
+        run: |
+          for f in *.sha256; do sha256sum -c "$f"; done
+          find . -maxdepth 1 -type f ! -name '*.sha256' -printf '%f\n' | sort | xargs sha256sum > "$RUNNER_TEMP/SHA256SUMS.txt"
+          mv "$RUNNER_TEMP/SHA256SUMS.txt" .
+          cat SHA256SUMS.txt
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          sed -e "s/@VERSION@/$VERSION/g" -e "s|@REPO@|$GH_REPO|g" -e "s/@TAG@/$GITHUB_REF_NAME/g" \
+            .github/release-notes.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "OpenCompanion $VERSION" --notes-file "$RUNNER_TEMP/notes.md" assets/*

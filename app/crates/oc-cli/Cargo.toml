@@ -1,0 +1,25 @@
+[package]
+name = "oc-cli"
+description = "OpenCompanion command-line tools (AIS images, probes, dumps)"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "oc"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+oc-ais.workspace = true
+oc-protocol.workspace = true
+oc-ramload.workspace = true
+oc-tas-image.workspace = true
+oc-dfu.workspace = true
+oc-install.workspace = true
+oc-device.workspace = true
+
+[features]
+# `oc firmware package` (scripts/package_firmware.*): needs oc-device's release code (zip, SHA-256).
+firmware-package = ["oc-device/github"]

@@ -1,0 +1,557 @@
+{
+ "format": "opencompanion-profile",
+ "profile_version": 1,
+ "size": 616,
+ "layout": "include/params.h (profile_t, 616 bytes, little-endian); band slots as eq_band_t fields",
+ "builtin": true,
+ "read_only": true,
+ "version": 1,
+ "flags": 20,
+ "flags_names": [
+  "PF_LOUDNESS",
+  "PF_STOCK_GRAPH"
+ ],
+ "color": 0,
+ "name": "Bose d'origine",
+ "sub_level_cdb": 0,
+ "crossover_hz": 0,
+ "aux_gain_cdb": 540,
+ "trim_cdb": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "band_targets": [
+  "global",
+  "inner_L",
+  "inner_R",
+  "outer_L",
+  "outer_R",
+  "sub"
+ ],
+ "band": [
+  [
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 32,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 55,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 95,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 160,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 280,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 480,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 820,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 1400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 2400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 4100,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 7000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 12000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   }
+  ],
+  [
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 32,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 55,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 95,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 160,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 280,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 480,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 820,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 1400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 2400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 4100,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 7000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 12000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   }
+  ],
+  [
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 32,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 55,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 95,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 160,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 280,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 480,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 820,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 1400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 2400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 4100,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 7000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 12000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   }
+  ],
+  [
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 32,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 55,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 95,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 160,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 280,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 480,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 820,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 1400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 2400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 4100,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 7000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 12000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   }
+  ],
+  [
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 32,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 55,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 95,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 160,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 280,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 480,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 820,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 1400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 2400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 4100,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 7000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 12000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   }
+  ],
+  [
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 32,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 55,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 95,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 160,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 280,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 480,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 820,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 1400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 2400,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 4100,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 7000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   },
+   {
+    "type": "off",
+    "reserved": 0,
+    "freq_hz": 12000,
+    "gain_cdb": 0,
+    "q_milli": 707
+   }
+  ]
+ ],
+ "bytes_hex": "01140000426f73652064276f726967696e650000000000001c020000000000000000000000000000000020000000c302000037000000c30200005f000000c3020000a0000000c302000018010000c3020000e0010000c302000034030000c302000078050000c302000060090000c302000004100000c3020000581b0000c3020000e02e0000c302000020000000c302000037000000c30200005f000000c3020000a0000000c302000018010000c3020000e0010000c302000034030000c302000078050000c302000060090000c302000004100000c3020000581b0000c3020000e02e0000c302000020000000c302000037000000c30200005f000000c3020000a0000000c302000018010000c3020000e0010000c302000034030000c302000078050000c302000060090000c302000004100000c3020000581b0000c3020000e02e0000c302000020000000c302000037000000c30200005f000000c3020000a0000000c302000018010000c3020000e0010000c302000034030000c302000078050000c302000060090000c302000004100000c3020000581b0000c3020000e02e0000c302000020000000c302000037000000c30200005f000000c3020000a0000000c302000018010000c3020000e0010000c302000034030000c302000078050000c302000060090000c302000004100000c3020000581b0000c3020000e02e0000c302000020000000c302000037000000c30200005f000000c3020000a0000000c302000018010000c3020000e0010000c302000034030000c302000078050000c302000060090000c302000004100000c3020000581b0000c3020000e02e0000c302",
+ "notes": {
+  "source": "firmware/dsp/src/control/profile_bose.c (OPK): the Bose base (stock graph), flat user EQ, stock loudness, stock AUX gain",
+  "upload": "use the built-in profile (OPK), or write the bytes with OPW"
+ }
+}

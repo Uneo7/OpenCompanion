@@ -1,0 +1,62 @@
+[package]
+name = "oc-app"
+description = "OpenCompanion settings app (egui)"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[lib]
+name = "oc_app"
+path = "src/lib.rs"
+
+[[bin]]
+name = "opencompanion"
+path = "src/main.rs"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Dwm"] }
+
+[dependencies]
+raw-window-handle = "0.6"
+sys-locale = "0.3"
+eframe.workspace = true
+# Native backends for eframe's wgpu renderer (eframe only enables Metal): DX12 on Windows; Vulkan is built in on Linux.
+wgpu = { version = "24", default-features = false, features = ["dx12", "metal", "wgsl"] }
+resvg.workspace = true
+image = { version = "0.25", default-features = false, features = ["png"] }
+oc-device.workspace = true
+oc-osvolume.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rfd.workspace = true
+# eframe's `winit/default` features, dropped with egui's default fonts: Wayland through dlopen (no link-time
+# libwayland) and client-side decorations.
+winit = "0.30"
+
+[build-dependencies]
+# Windows targets only (build.rs): the .exe icon and version info, compiled with the Windows SDK's rc.exe (or
+# windres for GNU). Nothing at run time.
+embed-resource = "3"
+
+[package.metadata.bundle]
+name = "OpenCompanion"
+identifier = "org.opencompanion.app"
+icon = ["../../packaging/macos/opencompanion.icns", "../../packaging/icons/png/opencompanion-256.png", "../../packaging/icons/png/opencompanion-128.png", "../../packaging/icons/png/opencompanion-32.png"]
+category = "public.app-category.music"
+short_description = "Settings for the OpenCompanion firmware of the Companion 5 speaker"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Linux: winit reports no system theme, so "Automatique" reads the XDG settings portal (`color-scheme`), the
+# same D-Bus portal client rfd already uses.
+ashpd = { version = "0.11", default-features = false, features = ["async-std"] }
+pollster = "0.4"
+futures-util = { version = "0.3", default-features = false }
+
+[dev-dependencies]
+# Glyph coverage of the embedded fonts (egui's own fonts are not compiled in).
+ab_glyph = "0.2"
+
+[features]
+# Production builds (packaging / CI): firmware comes only from the latest GitHub release of Uneo7/OpenCompagnon,
+# downloaded and verified into <data>/firmware/<tag>/; no development tree. Default builds read the dev tree.
+release-updates = ["oc-device/github"]

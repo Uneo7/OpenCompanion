@@ -1,0 +1,5 @@
+# Firmware build outputs: only the release copies in firmware/release/ are committed (firmware/release/README.md).
+/firmware/**/build/
+# Release packages (app/scripts/package_app.*, package_firmware.*).
+/app/dist/
+/app/target/

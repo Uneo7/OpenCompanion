@@ -1,0 +1,10 @@
+[package]
+name = "oc-dfu"
+description = "USB DFU 1.0 host for the TAS1020B ROM boot loader"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+nusb.workspace = true

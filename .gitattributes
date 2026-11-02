@@ -1,0 +1,15 @@
+* text=auto
+# Scripts run on macOS and Linux runners: LF whatever the committer's platform.
+*.sh text eol=lf
+*.rules text eol=lf
+*.desktop text eol=lf
+*.plist text eol=lf
+*.yml text eol=lf
+*.ps1 text eol=crlf
+# Firmware and images: byte-exact (the release manifest records their SHA-256).
+*.out binary
+*.dfu binary
+*.bin binary
+*.ico binary
+*.icns binary
+*.png binary

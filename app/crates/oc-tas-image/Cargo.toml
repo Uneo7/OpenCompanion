@@ -1,0 +1,10 @@
+[package]
+name = "oc-tas-image"
+description = "TAS1020B EEPROM / DFU image format: header (checksum, data type) + application code"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+crc32fast.workspace = true

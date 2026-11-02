@@ -1,0 +1,14 @@
+# OpenCompanion: lets the logged-in user talk to the Companion 5 speaker without root.
+# Install: sudo cp 70-opencompanion.rules /etc/udev/rules.d/
+#          sudo udevadm control --reload && sudo udevadm trigger
+# then unplug and replug the speaker's USB cable.
+
+# Normal operation (HID): Bose firmware and OpenCompanion firmware 0.5.0 or later (both 05a7:1020).
+KERNEL=="hidraw*", ATTRS{idVendor}=="05a7", ATTRS{idProduct}=="1020", TAG+="uaccess"
+# OpenCompanion firmware 0.4.x only (development USB IDs).
+KERNEL=="hidraw*", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="0001", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="0002", TAG+="uaccess"
+
+# Recovery: the USB controller's built-in DFU loading mode (05a7:1020, or ffff:fffe without a valid header).
+SUBSYSTEM=="usb", ATTR{idVendor}=="05a7", ATTR{idProduct}=="1020", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="ffff", ATTR{idProduct}=="fffe", TAG+="uaccess"

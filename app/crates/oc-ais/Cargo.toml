@@ -1,0 +1,12 @@
+[package]
+name = "oc-ais"
+description = "AIS (Application Image Script) images for the TMS320DA705 DSP: read, write, ELF to AIS"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+object.workspace = true
+flate2.workspace = true
+crc32fast.workspace = true

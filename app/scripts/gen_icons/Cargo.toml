@@ -1,0 +1,13 @@
+[package]
+name = "gen-icons"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+
+# Its own workspace: never built with the app.
+[workspace]
+
+[dependencies]
+resvg = { version = "0.45", default-features = false }
+png = "0.17"

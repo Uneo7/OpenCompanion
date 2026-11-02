@@ -1,0 +1,80 @@
+name: CI
+
+# Branch pushes and pull requests. Release tags run it through release.yml (workflow_call) instead.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: app
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # hidapi (C hidraw backend) links libudev; oc-osvolume links ALSA. eframe/winit load
+      # X11 / Wayland / GL at run time (dlopen), so no other -dev package is needed to build.
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libudev-dev libasound2-dev pkg-config
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app
+
+      - name: Build
+        run: cargo build --workspace --all-targets --locked
+
+      - name: Test
+        run: cargo test --workspace --locked
+
+  # The other macOS architecture, linked with the runner's Xcode SDK (macos-latest is arm64).
+  macos-x86_64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app
+      - name: Build x86_64-apple-darwin
+        run: cargo build --workspace --all-targets --locked --target x86_64-apple-darwin
+
+  # aarch64 Linux, cross-linked with zig (same path as scripts/check_all_targets.sh).
+  linux-aarch64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: 0.14.0
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild --locked
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app
+      - name: Build aarch64-unknown-linux-gnu
+        run: bash scripts/check_all_targets.sh --no-host aarch64-unknown-linux-gnu

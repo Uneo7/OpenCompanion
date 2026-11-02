@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OpenCompanion
+GenericName=Speaker settings
+GenericName[fr]=Réglages de l'enceinte
+Comment=Settings for the OpenCompanion firmware of the Companion 5 speaker
+Comment[fr]=Réglages du firmware OpenCompanion de l'enceinte Companion 5
+Exec=opencompanion
+Icon=opencompanion
+Terminal=false
+Categories=AudioVideo;Audio;Settings;
+StartupWMClass=opencompanion

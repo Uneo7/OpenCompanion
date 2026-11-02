@@ -1,0 +1,57 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/oc-ais",
+    "crates/oc-protocol",
+    "crates/oc-tas-image",
+    "crates/oc-dfu",
+    "crates/oc-ramload",
+    "crates/oc-install",
+    "crates/oc-device",
+    "crates/oc-osvolume",
+    "crates/oc-cli",
+    "crates/oc-app",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "GPL-3.0-or-later"
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+hidapi = "2"
+object = { version = "0.36", default-features = false, features = ["read", "elf", "std"] }
+flate2 = "1"
+# Without egui's built-in fonts (Ubuntu Light, Hack, Noto Emoji, emoji-icon-font): the app embeds its own
+# (Inter, Geist Mono; the Lucide icons are SVGs). Same features as eframe's defaults otherwise; `winit/default` (Wayland dlopen,
+# CSD) is restored by the `winit` dependency of oc-app.
+eframe = { version = "0.31", default-features = false, features = ["accesskit", "wgpu", "glow", "wayland", "x11"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "6"
+# Native file dialogs: Win32 on Windows, AppKit on macOS, the XDG desktop portal (D-Bus, no GTK) on Linux.
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "async-std"] }
+# Lucide icons: SVG rasterised at the drawn size (no text, no raster images inside SVGs).
+resvg = { version = "0.45", default-features = false }
+nusb = "0.1"
+crc32fast = "1"
+# Firmware releases from GitHub: pure-Rust HTTPS (rustls, bundled Mozilla roots), zip and SHA-256. No system
+# library: the app stays one self-contained binary.
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+sha2 = "0.10"
+oc-ais = { path = "crates/oc-ais" }
+oc-protocol = { path = "crates/oc-protocol" }
+oc-tas-image = { path = "crates/oc-tas-image" }
+oc-dfu = { path = "crates/oc-dfu" }
+oc-ramload = { path = "crates/oc-ramload" }
+oc-install = { path = "crates/oc-install" }
+oc-device = { path = "crates/oc-device" }
+oc-osvolume = { path = "crates/oc-osvolume" }
+
+# The optimal-parse LZ4 encoder (oc-ais) is slow unoptimised: keep debug builds and tests fast.
+[profile.dev.package.oc-ais]
+opt-level = 3

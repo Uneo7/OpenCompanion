@@ -1,0 +1,12 @@
+[package]
+name = "oc-ramload"
+description = "DSP RAM loader host side: installs the loader stub through the Bose console, then loads and runs an image"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+crc32fast.workspace = true
+oc-ais.workspace = true
+oc-protocol.workspace = true

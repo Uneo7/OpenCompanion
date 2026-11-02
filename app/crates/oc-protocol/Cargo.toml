@@ -1,0 +1,10 @@
+[package]
+name = "oc-protocol"
+description = "USB link to the Bose Companion 5: vendor HID (report ID 2), DSP console, TAS EEPROM"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+hidapi.workspace = true

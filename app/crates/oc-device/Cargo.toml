@@ -1,0 +1,26 @@
+[package]
+name = "oc-device"
+description = "OpenCompanion speaker backend for the app: profile model (params.h), DSP console commands, hot-plug worker, installer controller"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+oc-ais.workspace = true
+oc-dfu.workspace = true
+oc-install.workspace = true
+oc-protocol.workspace = true
+oc-ramload.workspace = true
+oc-tas-image.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ureq = { workspace = true, optional = true }
+zip = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+crc32fast.workspace = true
+
+
+[features]
+# Only production builds (oc-app `release-updates`) and the CLI's packaging command enable it.
+github = ["dep:ureq", "dep:zip", "dep:sha2"]
