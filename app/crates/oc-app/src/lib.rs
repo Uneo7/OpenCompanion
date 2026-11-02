@@ -5,6 +5,7 @@ pub mod config;
 pub mod i18n;
 pub mod model;
 mod platform;
+pub mod single_instance;
 mod theme;
 mod views;
 mod widgets;

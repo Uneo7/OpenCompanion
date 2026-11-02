@@ -24,7 +24,7 @@ pub fn stock_backup_status(root: &Path) -> Option<BackupEntry> {
 /// refused: the stock images can no longer be read from it.
 ///
 /// `loaders`: before the first backup the stock image is unknown, so pass
-/// `StockRef::Digests(&STOCK_LOADER_DIGESTS)` for the RAM-loader check.
+/// `StockRef::Known` for the RAM-loader check.
 pub fn ensure_stock_backup(root: &Path, tas: &dyn TasPort, dsp: &dyn Link, loaders: &Loaders, host: &mut dyn Host) -> Result<StockBackup> {
     let existing = stock_backup_status(root);
     let header = tas.read(0, HEADER_LEN)?;
@@ -61,7 +61,7 @@ pub fn ensure_stock_backup(root: &Path, tas: &dyn TasPort, dsp: &dyn Link, loade
     if Content::of_tas(&tas_bytes) != Content::Stock || Content::of_dsp(&dsp_bytes) != Content::Stock {
         return refused("the EEPROMs read do not hold a complete stock Bose image: not saved as the stock backup");
     }
-    let entry = save(root, &speaker_id(&dsp_bytes), &stamp_now(), Some(&tas_bytes), Some(&dsp_bytes))?;
+    let entry = save(root, &speaker_id(&tas_bytes, &dsp_bytes), &stamp_now(), Some(&tas_bytes), Some(&dsp_bytes))?;
     if let DspRuntime::Stock { svm } = &rt {
         // Informative only (not part of the checksums): the Bose revision this backup was read from.
         let _ = std::fs::write(entry.dir.join(super::files::VERSION_FILE), format!("{svm}\n"));

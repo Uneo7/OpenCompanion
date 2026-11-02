@@ -428,5 +428,7 @@
   "fw.release.err.no_fw": "No firmware found on GitHub ({repo})",
   "fw.release.err.manifest": "Invalid firmware manifest: {error}",
   "inst.err.no_fw": "No firmware to install: {why}",
-  "inst.restore.stock": "The speaker already runs the Bose® firmware: nothing to restore"
+  "inst.restore.stock": "The speaker already runs the Bose® firmware: nothing to restore",
+  "conn.busy": "The speaker is used by another application (OpenCompanion already open or the Bose® app). Retrying automatically.",
+  "conn.inaccessible": "Cannot open the speaker: {error}. Retrying automatically."
 }

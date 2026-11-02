@@ -76,7 +76,10 @@ impl App {
             // Every connection of a ready speaker compares its firmware with the app's.
             Connection::Ready => self.ui.hw.check_pending = true,
             Connection::Recovery => self.ui.toast.show(ctx, format!("{} · {}", tr("inst.err.title"), tr("inst.err.guide"))),
-            Connection::Inaccessible(e) => self.ui.toast.show(ctx, e),
+            Connection::Inaccessible(e) => {
+                oc_device::install::log_file::append(&[format!("speaker HID cannot be opened (retrying): {e}")]);
+                self.ui.toast.show(ctx, crate::views::install::explain::inaccessible(&e));
+            }
             _ => {}
         }
     }

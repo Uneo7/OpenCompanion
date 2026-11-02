@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use oc_install::backup::{self as ob, BackupEntry, BackupFiles, StockBackup};
-use oc_install::dsp::{Loaders, StockRef, STOCK_LOADER_DIGESTS};
+use oc_install::dsp::{Loaders, StockRef};
 use oc_install::tas::{OcPort, StockPort};
 use oc_install::Host;
 use oc_protocol::oc_hid::OcRelay;
@@ -41,7 +41,7 @@ pub fn load_stock(root: &Path) -> Result<BackupFiles, String> {
 /// Reads only.
 pub fn ensure(src: &FirmwareSources, conn: &Conn, host: &mut dyn Host) -> Result<StockBackup, String> {
     let (stub, updater) = src.loaders()?;
-    let loaders = Loaders { stock: StockRef::Digests(&STOCK_LOADER_DIGESTS), stub: &stub, updater: &updater };
+    let loaders = Loaders { stock: StockRef::Known, stub: &stub, updater: &updater };
     let r = match conn {
         Conn::Stock(c) => ob::ensure_stock_backup(&src.backups, &StockPort::new(c), c, &loaders, host),
         Conn::Oc(d) => ob::ensure_stock_backup(&src.backups, &OcPort::new(d), &OcRelay::new(d), &loaders, host),

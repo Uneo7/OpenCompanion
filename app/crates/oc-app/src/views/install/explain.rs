@@ -123,3 +123,24 @@ mod tests {
         assert_eq!(unsupported_stock("the DSP did not answer"), None);
     }
 }
+
+/// The speaker is there but its HID interface cannot be opened (the worker keeps retrying).
+pub fn inaccessible(e: &str) -> String {
+    let l = e.to_ascii_lowercase();
+    let busy = ["exclusive access", "already open", "0xe00002c5", "in use", "sharing violation"].iter().any(|k| l.contains(k));
+    if busy {
+        tr("conn.busy").to_owned()
+    } else {
+        t_with("conn.inaccessible", &[("error", &e)])
+    }
+}
+
+#[cfg(test)]
+mod busy_tests {
+    #[test]
+    fn a_speaker_held_by_another_app_is_said_so() {
+        let mac = "HID : hidapi error: hid_open_path: failed to open IOHIDDevice from mach entry: (0xE00002C5) (iokit/common) exclusive access and device already open";
+        assert_eq!(super::inaccessible(mac), crate::i18n::tr("conn.busy"));
+        assert!(super::inaccessible("permission denied").contains("permission denied"));
+    }
+}

@@ -13,7 +13,7 @@ mod stub;
 
 pub use image::{read_image, LoadImage};
 pub use loader::{load_image, probe, write_chunk};
-pub use stub::{check_area_free, hijack, install_stub, stock_ram};
+pub use stub::{check_area_free, hijack, hijack_with, install_stub, stock_ram};
 
 pub const RAM_LO: u32 = 0x1000_0000;
 pub const RAM_HI: u32 = 0x1003_0000;

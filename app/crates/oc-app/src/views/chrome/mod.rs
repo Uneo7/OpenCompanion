@@ -57,12 +57,18 @@ fn status(ui: &mut egui::Ui, cx: &mut Cx, right_center: Pos2) {
     let tw = text::width(&ctx, &label, &style);
     let w = 6.0 + 7.0 + tw;
     let rect = Rect::from_min_size(Pos2::new(right_center.x - w, right_center.y - 8.0), Vec2::new(w, 16.0));
-    let reconnecting = s.link == LinkState::Reconnecting;
+    // Held by another app (or not openable): amber dot, and the tooltip says why (the worker keeps retrying).
+    let blocked = match cx.device.connection() {
+        crate::model::Connection::Inaccessible(e) => Some(crate::views::install::explain::inaccessible(&e)),
+        _ => None,
+    };
+    let reconnecting = s.link == LinkState::Reconnecting || blocked.is_some();
     let painter = ui.painter();
     painter.circle_filled(Pos2::new(rect.left() + 3.0, rect.center().y), 3.0, if reconnecting { t.warn } else { t.ok });
     text::line(painter, &label, &style, t.muted, rect.left() + 13.0, rect.top(), 16.0, Align::Min);
     let resp = ui.interact(rect, Id::new("conn"), Sense::hover());
-    tooltip::attach(&resp, tr(if reconnecting { "app.conn.reconnecting" } else { "app.conn.tip" }), None);
+    let tip = blocked.unwrap_or_else(|| tr(if reconnecting { "app.conn.reconnecting" } else { "app.conn.tip" }).to_owned());
+    tooltip::attach(&resp, &tip, None);
     if resp.hovered() {
         ctx.set_cursor_icon(CursorIcon::Default);
     }

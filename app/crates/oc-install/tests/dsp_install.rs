@@ -304,3 +304,52 @@ fn update_resumes_after_any_interruption() {
     let (_, bricks) = sweep(&setup, &b2);
     assert_eq!(bricks, 0, "an update never bricks");
 }
+
+/// A stock speaker answering `svm`, with the output meter's process pointer of `process` in RAM.
+fn stock_speaker_rev(b: &DspBundle, svm: &'static [u8], process: u32) -> Shared {
+    let sp = stock_speaker(b);
+    let mut s = sp.borrow_mut();
+    s.dsp.svm = svm;
+    let o = (oc_ramload::HIJACK_SLOT - oc_ramload::RAM_LO) as usize;
+    s.dsp.ram[o..o + 4].copy_from_slice(&process.to_le_bytes());
+    drop(s);
+    sp
+}
+
+#[test]
+fn migration_from_a_d010103_speaker() {
+    let b = fixture::bundle(1, 0x0000_0100);
+    let rev = oc_install::dsp::revision::D010103;
+    let sp = stock_speaker_rev(&b, b"D01.01.03U01.01.04\r>", rev.process);
+    let (r, _) = run(&sp, &b, true, false);
+    let rep = r.unwrap();
+    assert!(rep.installed);
+    assert_installed(&sp, &b);
+}
+
+#[test]
+fn an_unknown_version_with_a_known_layout_is_taken_over() {
+    let b = fixture::bundle(1, 0x0000_0100);
+    // A future Bose version string with the D01.01.03 RAM layout: chosen by content, not by version.
+    let sp = stock_speaker_rev(&b, b"D01.01.09U01.01.05\r>", oc_install::dsp::revision::D010103.process);
+    let (r, _) = run(&sp, &b, true, false);
+    assert!(r.unwrap().installed);
+    assert_installed(&sp, &b);
+}
+
+#[test]
+fn a_layout_matching_no_entry_is_refused_before_any_ram_write() {
+    let b = fixture::bundle(1, 1);
+    // Whatever the version says, the module holds a process pointer of no known layout.
+    for svm in [&b"D01.01.03U01.01.04\r>"[..], b"D01.01.09U01.01.05\r>"] {
+        let sp = stock_speaker_rev(&b, svm, 0x1002_ABC0);
+        let ram = sp.borrow().dsp.ram.clone();
+        let (r, _) = run(&sp, &b, true, false);
+        let e = r.unwrap_err().to_string();
+        assert!(e.contains("matches no known layout") && e.contains("Nothing was written"), "{e}");
+        let s = sp.borrow();
+        assert_eq!(s.ee_writes, 0);
+        assert!(s.dsp.ram == ram, "no RAM write (BWW) at all");
+        assert_eq!(s.dsp.run, DspRun::Stock);
+    }
+}

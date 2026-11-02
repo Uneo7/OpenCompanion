@@ -6,13 +6,14 @@ pub(crate) mod critical;
 pub(crate) mod enter;
 mod install;
 mod plan;
+pub mod revision;
 mod runtime;
 pub(crate) mod steps;
 pub(crate) mod survey;
 mod updater;
 
 pub use bundle::DspBundle;
-pub use enter::{loader_digests, Loaders, StockRef, STOCK_LOADER_DIGESTS};
+pub use enter::{loader_digests, revision_digests, Loaders, StockRef, STOCK_LOADER_DIGESTS};
 pub use install::{install, DspOptions, DspReport};
 pub use plan::{plan, DspPlan, Step};
 pub use runtime::{detect, reason_text, DspRuntime};

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 use oc_install::backup::{default_root, read_dsp, read_tas, save, speaker_id, stamp_now};
-use oc_install::dsp::{Loaders, StockRef, STOCK_LOADER_DIGESTS};
+use oc_install::dsp::{Loaders, StockRef};
 use oc_install::tas::{OcPort, StockPort};
 
 use crate::install::connect::Conn;
@@ -28,9 +28,9 @@ pub fn run(a: BackupArgs) -> anyhow::Result<()> {
         Conn::Oc(d) => read_tas(&OcPort::new(d), &mut host)?,
     };
     // The stock image is not known yet: the RAM-loader area is checked against built-in digests.
-    let loaders = Loaders { stock: StockRef::Digests(&STOCK_LOADER_DIGESTS), stub: &stub, updater: &updater };
+    let loaders = Loaders { stock: StockRef::Known, stub: &stub, updater: &updater };
     let dsp = conn.with_dsp(|l| read_dsp(l, &loaders, &mut host))?;
-    let e = save(&root, &speaker_id(&dsp.bytes), &stamp_now(), Some(&tas), Some(&dsp.bytes))?;
+    let e = save(&root, &speaker_id(&tas, &dsp.bytes), &stamp_now(), Some(&tas), Some(&dsp.bytes))?;
     for (name, d) in [("U6002", e.tas), ("U7001", e.dsp)] {
         if let Some(d) = d {
             println!("{name}: {} (CRC-32 0x{:08x})", d.content, d.crc32);

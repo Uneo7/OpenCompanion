@@ -14,6 +14,12 @@ fn main() -> eframe::Result {
         oc_device::paths::data_dir().display(),
         cfg!(feature = "release-updates"),
     )]);
+    // One instance at a time (screenshot runs excepted): a second launch brings the first one forward.
+    if opts.shots.is_none() && matches!(oc_app::single_instance::acquire(), oc_app::single_instance::Instance::Other) {
+        oc_device::install::log_file::append(&["another OpenCompanion is already running: brought to the front, exiting"]);
+        eprintln!("OpenCompanion is already running: its window was brought to the front.");
+        return Ok(());
+    }
     let run = |renderer: eframe::Renderer, opts: cli::Options| {
         let native = eframe::NativeOptions { renderer, ..app::window::native_options(opts.shots.is_some()) };
         eframe::run_native("OpenCompanion", native, Box::new(move |cc| Ok(Box::new(app::App::new(cc, opts)))))

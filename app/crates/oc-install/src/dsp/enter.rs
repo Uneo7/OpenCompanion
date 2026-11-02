@@ -4,6 +4,7 @@ use oc_protocol::dsp::DspConsole;
 use oc_protocol::Link;
 use oc_ramload as rl;
 
+use super::revision::{self, StockRevision};
 use super::runtime::{detect, DspRuntime};
 use super::updater::Updater;
 use crate::error::{refused, Error, Result};
@@ -13,7 +14,11 @@ use crate::host::{Host, Plan};
 /// not firmware bytes: nothing of the Bose firmware is distributed.
 #[derive(Debug, Clone, Copy)]
 pub enum StockRef<'a> {
+    /// The user's stock backup of this speaker: the digests are computed from it.
     Image(&'a [u8]),
+    /// The digests of each revision table entry (the one whose layout the speaker's RAM matches): before the
+    /// first backup.
+    Known,
     /// One CRC-32 per 16-byte sample at `LOADER_LO + 0x100 * i` (see [`loader_digests`]).
     Digests(&'a [u32]),
 }
@@ -29,14 +34,15 @@ pub const STOCK_LOADER_DIGESTS: [u32; SAMPLES] = [
 
 pub const SAMPLES: usize = ((rl::LOADER_HI - rl::LOADER_LO) / 0x100) as usize;
 
-/// The stock image bytes equal what the stock firmware's RAM holds there after boot.
+/// The stock image bytes equal what the stock firmware's RAM holds there after boot (D01.01.01 loader area).
 pub fn loader_digests(stock_image: &[u8]) -> Result<Vec<u32>> {
-    let ram = rl::stock_ram(stock_image)?;
-    Ok(sample_addrs().map(|a| crc32fast::hash(&ram[off(a)..off(a) + 16])).collect())
+    revision_digests(stock_image, &revision::D010101)
 }
 
-fn sample_addrs() -> impl Iterator<Item = u32> {
-    (rl::LOADER_LO..rl::LOADER_HI).step_by(0x100)
+/// [`loader_digests`] over the loader area of `rev`.
+pub fn revision_digests(stock_image: &[u8], rev: &StockRevision) -> Result<Vec<u32>> {
+    let ram = rl::stock_ram(stock_image)?;
+    Ok(rev.samples().map(|a| crc32fast::hash(&ram[off(a)..off(a) + 16])).collect())
 }
 
 fn off(addr: u32) -> usize {
@@ -76,17 +82,31 @@ pub(crate) fn wait_runtime(link: &dyn Link, budget: Duration) -> DspRuntime {
 /// run interrupted during the stub upload (stock firmware still running) leaves part of it there. With
 /// [`StockRef::Digests`] a sample only partly covered by the stub cannot be checked: it is refused (a power
 /// cycle of the speaker restores the stock RAM).
-fn check_loader_area<L: Link + ?Sized>(console: &DspConsole<L>, b: &Loaders) -> Result<()> {
+fn check_loader_area<L: Link + ?Sized>(console: &DspConsole<L>, b: &Loaders, rev: &StockRevision) -> Result<()> {
+    // Every byte the stub upload writes must lie in the area checked for this revision.
+    for (a, d) in &b.stub.segments {
+        if *a < rl::LOADER_LO || *a + d.len() as u32 > rev.loader_hi {
+            return refused(format!(
+                "stub segment 0x{a:08x} +0x{:x} is outside the loader area checked on {} (0x{:08x}..0x{:08x})",
+                d.len(),
+                rev.dsp,
+                rl::LOADER_LO,
+                rev.loader_hi
+            ));
+        }
+    }
     let digests = match b.stock {
-        StockRef::Image(img) => loader_digests(img)?,
+        StockRef::Image(img) => revision_digests(img, rev)?,
+        StockRef::Known => rev.digests.to_vec(),
         StockRef::Digests(d) => d.to_vec(),
     };
-    if digests.len() != SAMPLES {
-        return refused(format!("{} loader-area digests, expected {SAMPLES}", digests.len()));
+    let samples = rev.samples().count();
+    if digests.len() != samples {
+        return refused(format!("{} loader-area digests, expected {samples} for {}", digests.len(), rev.dsp));
     }
     let stock_ram = match b.stock {
         StockRef::Image(img) => Some(rl::stock_ram(img)?),
-        StockRef::Digests(_) => None,
+        StockRef::Known | StockRef::Digests(_) => None,
     };
     // Sample with the stub overlaid: exact with the image; with digests only where the stub covers it all.
     let with_stub = |addr: u32| -> Option<Vec<u8>> {
@@ -105,7 +125,7 @@ fn check_loader_area<L: Link + ?Sized>(console: &DspConsole<L>, b: &Loaders) -> 
         out.into_iter().collect()
     };
     for attempt in 0..2 {
-        for (i, addr) in sample_addrs().enumerate() {
+        for (i, addr) in rev.samples().enumerate() {
             let got: Vec<u8> = console.read_words(addr, 4)?.iter().flat_map(|w| w.to_le_bytes()).collect();
             if crc32fast::hash(&got) != digests[i] && Some(&got) != with_stub(addr).as_ref() {
                 return refused(format!(
@@ -120,9 +140,6 @@ fn check_loader_area<L: Link + ?Sized>(console: &DspConsole<L>, b: &Loaders) -> 
     Ok(())
 }
 
-/// The only stock DSP revision whose RAM layout the RAM loader is built for.
-const HIJACK_REVISION: &str = "D01.01.01";
-
 fn not_hijacked(svm: &str, e: Error) -> Error {
     match e {
         Error::Cancelled => e,
@@ -133,19 +150,34 @@ fn not_hijacked(svm: &str, e: Error) -> Error {
     }
 }
 
+/// Read-only: the table entry whose layout the speaker's RAM holds (hijack signature, then the loader area).
+/// Chosen by content, never by the version string: a later Bose revision with a known layout works as is.
+fn match_layout<L: Link + ?Sized>(console: &DspConsole<L>, b: &Loaders) -> Result<&'static StockRevision> {
+    let mut why = Vec::new();
+    for rev in &revision::REVISIONS {
+        let v = console.read_words(rev.flags_addr(), 2)?;
+        if v[0] != 0x3 || v[1] != rev.process {
+            why.push(format!("{} layout: hijack target flags 0x{:x}, process 0x{:08x}", rev.dsp, v[0], v[1]));
+            continue;
+        }
+        match check_loader_area(console, b, rev) {
+            Ok(()) => return Ok(rev),
+            Err(Error::Refused(e)) => why.push(format!("{} layout: {e}", rev.dsp)),
+            Err(e) => return Err(e),
+        }
+    }
+    refused(format!("this Bose firmware's RAM matches no known layout ({})", why.join("; ")))
+}
+
 fn hijack(link: &dyn Link, b: &Loaders, host: &mut dyn Host) -> Result<()> {
     let console = DspConsole::new(link);
-    host.log("M1: checking that the RAM loader area still holds the stock .cinit table…");
-    check_loader_area(&console, b)?;
-    // Read-only, before any RAM write: the hijack target must be the expected one.
-    let v = console.read_words(rl::HIJACK_FLAGS, 2)?;
-    if v[0] != 0x3 || v[1] != rl::HIJACK_ORIGINAL {
-        return refused(format!("unexpected hijack target (flags 0x{:x}, process 0x{:08x}): this Bose firmware layout is not supported", v[0], v[1]));
-    }
+    host.log("M1: matching the stock RAM layout (read-only: hijack target, loader area)…");
+    let rev = match_layout(&console, b)?;
+    host.log(&format!("M1: the stock RAM has the {} layout.", rev.dsp));
     host.log("M1: installing the RAM loader stub (BWW, verified with BRR)…");
     rl::install_stub(&console, &b.stub.segments, |l| host.log(&l))?;
     host.log("M1: hijacking the output meter…");
-    rl::hijack(&console, b.stub.entry, |l| host.log(&l))?;
+    rl::hijack_with(&console, rev.module, rev.process, b.stub.entry, |l| host.log(&l))?;
     let v = rl::probe(link)?;
     host.log(&format!("M1: RAM loader running (v{v})."));
     Ok(())
@@ -199,11 +231,7 @@ pub(crate) fn enter_updater(link: &dyn Link, b: &Loaders, host: &mut dyn Host, d
         rt = match rt {
             DspRuntime::Updater { .. } => return Ok(before),
             DspRuntime::Stock { svm } => {
-                // The RAM loader (and its handoff_capture of the stock TAS link state) uses fixed addresses of
-                // D01.01.01: never on another revision (the backup then uses the stock raw read).
-                if !svm.starts_with(HIJACK_REVISION) {
-                    return Err(not_hijacked(&svm, Error::Refused(format!("the RAM loader supports {HIJACK_REVISION} only"))));
-                }
+                // The layout is matched on the speaker's RAM (match_layout), the version only goes to the log.
                 // Only RAM is touched up to here: a failure leaves the EEPROMs as they were.
                 hijack(link, b, host).and_then(|()| load_updater(link, b, host)).map_err(|e| not_hijacked(&svm, e))?
             }

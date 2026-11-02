@@ -114,6 +114,7 @@ impl eframe::App for App {
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let now = ctx.input(|i| i.time);
+        crate::single_instance::watch(ctx);
         // A close request from the OS (Alt+F4, Cmd+Q, the taskbar) asks first, like the window's close button.
         if ctx.input(|i| i.viewport().close_requested()) && !self.ui.close_confirmed {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);

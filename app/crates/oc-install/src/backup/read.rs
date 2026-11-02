@@ -65,8 +65,25 @@ pub fn read_dsp(link: &dyn Link, loaders: &Loaders, host: &mut dyn Host) -> Resu
     Ok(DspDump { bytes, before, after })
 }
 
-/// Neither chip exposes a serial number: the id is the CRC-32 of U7001's last page, the only bytes no
-/// OpenCompanion flow ever writes. Identical last pages share a folder; the restore checks the last page again.
-pub fn speaker_id(dsp: &[u8]) -> String {
-    format!("c5-{:08x}", crc32fast::hash(&dsp[LAST_PAGE]))
+/// Neither chip exposes a serial number, and U7001's last page (the only bytes no OpenCompanion flow writes) is
+/// the same on every speaker: the id adds the CRC-32 of both whole dumps, so speakers whose EEPROMs differ get
+/// their own folder (identical dumps sharing one hold the same bytes). Older `c5-<last page>` folders stay
+/// readable; the restore checks the last page again.
+pub fn speaker_id(tas: &[u8], dsp: &[u8]) -> String {
+    let mut h = crc32fast::Hasher::new();
+    h.update(tas);
+    h.update(dsp);
+    format!("c5-{:08x}-{:08x}", crc32fast::hash(&dsp[LAST_PAGE]), h.finalize())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn ids_differ_when_the_dumps_differ() {
+        let dsp = vec![0xFF; oc_ais::eeprom::layout::EE_SIZE];
+        let (a, b) = (vec![1u8; 8192], vec![2u8; 8192]);
+        assert_ne!(super::speaker_id(&a, &dsp), super::speaker_id(&b, &dsp));
+        assert_eq!(super::speaker_id(&a, &dsp), super::speaker_id(&a, &dsp));
+        assert!(super::speaker_id(&a, &dsp).starts_with("c5-"));
+    }
 }

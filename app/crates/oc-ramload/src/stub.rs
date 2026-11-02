@@ -3,7 +3,7 @@ use std::time::Duration;
 use oc_protocol::dsp::DspConsole;
 use oc_protocol::Link;
 
-use crate::{fail, Result, HIJACK_FLAGS, HIJACK_MODULE, HIJACK_ORIGINAL, HIJACK_SLOT, LOADER_HI, LOADER_LO, RAM_HI, RAM_LO};
+use crate::{fail, Result, HIJACK_MODULE, HIJACK_ORIGINAL, LOADER_HI, LOADER_LO, RAM_HI, RAM_LO};
 
 fn words_of(data: &[u8]) -> Vec<u32> {
     data.chunks(4)
@@ -70,18 +70,30 @@ pub fn install_stub<L: Link + ?Sized>(console: &DspConsole<L>, segments: &[(u32,
     Ok(())
 }
 
-/// Redirects the output meter's process pointer to the stub entry, after checking its signature.
-pub fn hijack<L: Link + ?Sized>(console: &DspConsole<L>, entry: u32, mut log: impl FnMut(String)) -> Result<()> {
-    let v = console.read_words(HIJACK_FLAGS, 2)?;
+/// Redirects the output meter's process pointer to the stub entry, after checking its signature (D01.01.01).
+pub fn hijack<L: Link + ?Sized>(console: &DspConsole<L>, entry: u32, log: impl FnMut(String)) -> Result<()> {
+    hijack_with(console, HIJACK_MODULE, HIJACK_ORIGINAL, entry, log)
+}
+
+/// [`hijack`] for a given stock revision: `module` (flags word at +16, process pointer at +20) must read
+/// flags 3 and process `original` before the pointer is written.
+pub fn hijack_with<L: Link + ?Sized>(
+    console: &DspConsole<L>,
+    module: u32,
+    original: u32,
+    entry: u32,
+    mut log: impl FnMut(String),
+) -> Result<()> {
+    let v = console.read_words(module + 16, 2)?;
     let (flags, slot) = (v[0], v[1]);
-    if flags != 0x3 || slot != HIJACK_ORIGINAL {
+    if flags != 0x3 || slot != original {
         return fail(format!(
-            "unexpected hijack target 0x{HIJACK_MODULE:08x}: flags 0x{flags:x}, process 0x{slot:08x} \
-             (Bose firmware D01.01.01 expected)"
+            "unexpected hijack target 0x{module:08x}: flags 0x{flags:x}, process 0x{slot:08x} (expected 3 / \
+             0x{original:08x})"
         ));
     }
     // The stub may take over before the console answers.
-    if let Err(e) = console.write_words(HIJACK_SLOT, &[entry]) {
+    if let Err(e) = console.write_words(module + 20, &[entry]) {
         log(format!("  (no clean answer to the hijack write, expected: {e})"));
     }
     Ok(())

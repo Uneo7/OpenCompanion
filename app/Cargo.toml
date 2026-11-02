@@ -22,7 +22,8 @@ license = "GPL-3.0-or-later"
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
-hidapi = "2"
+# Shared (non-exclusive) opens on macOS: another process holding the speaker no longer locks the app out.
+hidapi = { version = "2", features = ["macos-shared-device"] }
 object = { version = "0.36", default-features = false, features = ["read", "elf", "std"] }
 flate2 = "1"
 # Without egui's built-in fonts (Ubuntu Light, Hack, Noto Emoji, emoji-icon-font): the app embeds its own

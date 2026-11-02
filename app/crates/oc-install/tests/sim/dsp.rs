@@ -70,7 +70,10 @@ impl Dsp {
                 let o = (HIJACK_FLAGS - RAM_LO) as usize;
                 self.ram[o..o + 4].copy_from_slice(&3u32.to_le_bytes());
                 let o = (HIJACK_SLOT - RAM_LO) as usize;
-                self.ram[o..o + 4].copy_from_slice(&HIJACK_ORIGINAL.to_le_bytes());
+                // The process pointer of the revision the stock firmware answers (`SVM`).
+                let svm = String::from_utf8_lossy(self.svm);
+                let process = oc_install::dsp::revision::for_svm(&svm).map_or(HIJACK_ORIGINAL, |r| r.process);
+                self.ram[o..o + 4].copy_from_slice(&process.to_le_bytes());
             } else {
                 self.run = DspRun::Dead;
             }
