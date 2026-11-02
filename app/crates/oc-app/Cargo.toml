@@ -57,6 +57,6 @@ futures-util = { version = "0.3", default-features = false }
 ab_glyph = "0.2"
 
 [features]
-# Production builds (packaging / CI): firmware comes only from the latest GitHub release of Uneo7/OpenCompagnon,
+# Production builds (packaging / CI): firmware comes only from the latest GitHub release of Uneo7/OpenCompanion,
 # downloaded and verified into <data>/firmware/<tag>/; no development tree. Default builds read the dev tree.
 release-updates = ["oc-device/github"]

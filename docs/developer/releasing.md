@@ -1,6 +1,6 @@
 # Releasing
 
-A release is one GitHub release of [`Uneo7/OpenCompagnon`](https://github.com/Uneo7/OpenCompagnon), tagged
+A release is one GitHub release of [`Uneo7/OpenCompanion`](https://github.com/Uneo7/OpenCompanion), tagged
 `v<version>` (the `version` of `app/Cargo.toml`). It carries the app packages for the three systems, the `oc`
 command-line tool, the firmware archive the app downloads, and checksums. Nothing is code-signed yet.
 

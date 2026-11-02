@@ -1,7 +1,7 @@
 # Firmware releases (GitHub)
 
 Production builds of the app take the firmware from the **latest release** of
-[`Uneo7/OpenCompagnon`](https://github.com/Uneo7/OpenCompagnon) (note the spelling). Development builds read the
+[`Uneo7/OpenCompanion`](https://github.com/Uneo7/OpenCompanion) (note the spelling). Development builds read the
 local development tree, as before. The two never mix: there is no runtime detection.
 
 ## Build commands
@@ -96,7 +96,7 @@ version than the one running is allowed, with an explicit warning in the confirm
 ## What the app does (production build)
 
 1. **Update check** (each connection, opening Settings › Firmware or the installer, after an install):
-   `GET https://api.github.com/repos/Uneo7/OpenCompagnon/releases/latest` (User-Agent `OpenCompanion/<version>`,
+   `GET https://api.github.com/repos/Uneo7/OpenCompanion/releases/latest` (User-Agent `OpenCompanion/<version>`,
    no token), then the `firmware-manifest.json` asset. Its versions are compared with the running ones; the
    Firmware rows show "current → available".
 2. **Update / first install**: a "Download" step downloads the zip (real progress), checks its SHA-256

@@ -5,5 +5,5 @@ pub mod manifest;
 pub mod package;
 pub mod store;
 
-pub const REPO: &str = "Uneo7/OpenCompagnon";
+pub const REPO: &str = "Uneo7/OpenCompanion";
 pub const API_BASE: &str = "https://api.github.com";
