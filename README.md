@@ -18,7 +18,7 @@
 | Updates | none | from the app (firmware from this project's GitHub releases) |
 | Safety net | none | automatic backup of the Bose firmware, restore in a few clicks |
 
-Works on Windows, macOS and Linux. No driver to install (one udev rule on Linux).
+Works on Windows, macOS and Linux.
 
 <p>
   <img src="docs/images/equalizer.png" width="49%" alt="Equalizer with eight bands">

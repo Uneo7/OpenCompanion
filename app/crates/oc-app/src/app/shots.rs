@@ -164,6 +164,20 @@ fn steps() -> Vec<Step> {
             }),
         );
     }
+    // README: a gentle, realistic curve (warm bass, slight presence, air).
+    add(
+        "readme-equalizer",
+        Box::new(|a, _| {
+            eq_editable(a);
+            a.device.rename_profile(3, "Warm");
+            let g = a.ui.eq.draft.get_mut(Target::Global);
+            g.push(Band::new(BandType::LowShelf, 90.0, 3.0, 0.71));
+            g.push(Band::new(BandType::Peak, 320.0, -1.5, 1.0));
+            g.push(Band::new(BandType::Peak, 2500.0, 1.5, 0.9));
+            g.push(Band::new(BandType::HighShelf, 9000.0, 2.5, 0.71));
+            a.ui.eq.selected = 2;
+        }),
+    );
     add(
         "equalizer-test-adv",
         Box::new(|a, _| {
@@ -290,7 +304,7 @@ fn steps() -> Vec<Step> {
                 a.ui.light = true;
             }),
         });
-        if ["equalizer", "settings-sound", "settings-legal", "install-confirm", "onboarding", "onboarding-welcome", "restore-power-cycle"].contains(&s.name.as_str()) {
+        if ["equalizer", "readme-equalizer", "settings-sound", "settings-legal", "install-confirm", "onboarding", "onboarding-welcome", "restore-power-cycle"].contains(&s.name.as_str()) {
             let e = setup.clone();
             all.push(Step {
                 name: format!("{}-en", s.name),
