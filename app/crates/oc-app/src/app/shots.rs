@@ -27,6 +27,8 @@ pub struct Runner {
     steps: Vec<Step>,
     index: usize,
     phase: Phase,
+    /// Language of the scenes (`--lang`); French by default.
+    lang: Lang,
 }
 
 fn eq_profile(app: &mut App, i: usize) {
@@ -303,10 +305,10 @@ fn steps() -> Vec<Step> {
 }
 
 impl Runner {
-    pub fn new(dir: PathBuf) -> Self {
+    pub fn new(dir: PathBuf, lang: Option<Lang>) -> Self {
         let _ = std::fs::create_dir_all(&dir);
         super::shots_board::write(&dir);
-        Self { dir, steps: steps(), index: 0, phase: Phase::Setup }
+        Self { dir, steps: steps(), index: 0, phase: Phase::Setup, lang: lang.unwrap_or(Lang::Fr) }
     }
 
     pub fn step(&mut self, ctx: &Context, app: &mut App) -> bool {
@@ -320,7 +322,7 @@ impl Runner {
             Phase::Setup => {
                 app.reset();
                 views::reset(ctx);
-                i18n::set_lang(Lang::Fr);
+                i18n::set_lang(self.lang);
                 views::prefs::set_theme(ctx, ThemePref::Dark);
                 (step.setup)(app, ctx);
                 self.phase = Phase::Wait(8);

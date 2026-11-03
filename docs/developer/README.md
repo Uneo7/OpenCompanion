@@ -1,6 +1,6 @@
 # OpenCompanion developer documentation
 
-Contributor-facing index. User guides: [`../../README.md`](../../README.md), [`../installation.md`](../installation.md),
+Contributor-facing index. User guides: [`../../README.md`](../../README.md), [`../README.md`](../README.md) (index),
 [`../recovery.md`](../recovery.md).
 
 ## Status (2026-11-01)
@@ -19,7 +19,7 @@ yet), macOS and Linux.
 ## Where things are
 | Topic | Document |
 |---|---|
-| Project overview, user README (install, unsigned builds, troubleshooting) | [`../../README.md`](../../README.md) |
+| Project overview, user README | [`../../README.md`](../../README.md); user guides (install, unsigned builds, troubleshooting): [`../README.md`](../README.md) |
 | Development loop, safety rules | [`dev-loop.md`](dev-loop.md) |
 | Firmware releases on GitHub, production build | [`firmware-releases.md`](firmware-releases.md) |
 | Packaging, CI and release workflows, committed firmware files, publishing | [`releasing.md`](releasing.md) |

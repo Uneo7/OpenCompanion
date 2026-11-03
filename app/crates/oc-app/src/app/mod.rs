@@ -49,11 +49,12 @@ impl App {
             }
         }
         let saved = AppConfig::load();
+        // `--lang` is saved as the preference, except for screenshots (they only use it for their scenes).
         match opts.lang {
-            Some(l) => {
+            Some(l) if opts.shots.is_none() => {
                 let _ = config::set_language(l); // a read-only config dir only loses the persistence
             }
-            None => saved.apply(),
+            _ => saved.apply(),
         }
         if let Some(dir) = &opts.firmware {
             let _ = AppConfig { firmware_dir: Some(dir.clone()), ..AppConfig::load() }.save();
@@ -76,7 +77,8 @@ impl App {
         let mut ui = UiState::new(device.as_ref());
         ui.screen = opts.screen;
         ui.light = opts.light;
-        Self { device, ui, shots: opts.shots.map(shots::Runner::new) }
+        let lang = opts.lang;
+        Self { device, ui, shots: opts.shots.map(|dir| shots::Runner::new(dir, lang)) }
     }
 
     pub(crate) fn reset(&mut self) {

@@ -1,7 +1,7 @@
 OpenCompanion @VERSION@: settings app and firmware for the Bose® Companion® 5 speaker.
 
 **Before installing, read the [README](https://github.com/@REPO@/blob/@TAG@/README.md)** and the
-[installation guide](https://github.com/@REPO@/blob/@TAG@/docs/installation.md). The app backs up the original
+[install guide](https://github.com/@REPO@/blob/@TAG@/docs/install.md). The app backs up the original
 Bose® firmware automatically before changing anything.
 
 ## Downloads
@@ -16,7 +16,7 @@ Bose® firmware automatically before changing anything.
 | Firmware (downloaded by the app itself) | `opencompanion-firmware-*.zip`, `firmware-manifest.json` |
 
 These builds are **not code-signed**: Windows SmartScreen and macOS Gatekeeper warn on first launch. See
-[First run of an unsigned build](https://github.com/@REPO@/blob/@TAG@/README.md#2-first-run-of-an-unsigned-build).
+[First launch: unsigned builds](https://github.com/@REPO@/blob/@TAG@/docs/install.md#first-launch-unsigned-builds).
 
 ## Checksums
 
