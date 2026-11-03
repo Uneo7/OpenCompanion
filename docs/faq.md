@@ -13,7 +13,7 @@ Yes. The knob sets the volume, as before.
 
 Yes, from your automatic backup: see [Back to Bose](restore.md).
 
-## Is "Bose® original" the stock sound?
+## Is "Bose original" the stock sound?
 
 It's the stock Bose processing, kept as a locked profile you can't edit. It isn't guaranteed identical to the
 Bose firmware's sound; duplicate it to start your own profile.

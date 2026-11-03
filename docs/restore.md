@@ -8,7 +8,7 @@ Put the original Bose® firmware back on the speaker, from the backup made at in
 
 1. Go to **Settings > Firmware**.
 2. On the **Backup** row, click **Restore…**.
-3. Follow the **Restore the Bose® firmware** wizard. It restores the audio processor, then the USB controller,
+3. Follow the **Restore the Bose firmware** wizard. It restores the audio processor, then the USB controller,
    and reads everything back.
 4. Don't unplug the speaker until it's done. It may ask you to unplug the speaker from the mains and plug it
    back in.

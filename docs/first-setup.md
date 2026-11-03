@@ -26,7 +26,7 @@ The app keeps the computer awake while it works.
 
 1. **Download**: the latest firmware from GitHub, checked against its SHA-256 fingerprints. Offline, a firmware
    it already downloaded is used.
-2. **Backup**: reads the original Bose® firmware of the USB controller twice, checks both reads match, and saves
+2. **Backup**: reads the original Bose firmware of the USB controller twice, checks both reads match, and saves
    it on your computer. Checks the audio processor's memory matches the Bose firmware and saves a copy too.
    Nothing on the speaker has changed yet.
 3. **Preparation**: loads a small temporary program into the audio processor. Nothing is written.

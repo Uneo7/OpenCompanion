@@ -12,7 +12,7 @@
 | Knob all the way down | lowest volume | real mute |
 | Equalizer | fixed | 4 profiles, **Simple** (all speakers) or **Advanced** (each driver) |
 | Switching profiles | no profiles | from the app, or double-tap the pod's mute button; no clicks |
-| Original sound | the only sound | kept as the locked **Bose® original** profile |
+| Original sound | the only sound | kept as the locked **Bose original** profile |
 | Subwoofer level | rear knob | rear knob, or set in the app |
 | USB audio | 5.1, 16-bit | 5.1 16-bit, or 2.1 24-bit |
 | Updates | none | from the app (firmware from this project's GitHub releases) |
@@ -29,7 +29,7 @@ Works on Windows, macOS and Linux. No driver to install (one udev rule on Linux)
 
 1. **Download** the app for your system from [Releases](../../releases).
 2. **Open it** with the speaker plugged into the computer and the mains.
-3. **Follow the guided install.** It backs up the original Bose® firmware first; you can restore it anytime.
+3. **Follow the guided install.** It backs up the original Bose firmware first; you can restore it anytime.
 
 ![Guided install](docs/images/install.png)
 
@@ -48,4 +48,4 @@ GPL-3.0-or-later, see [LICENSE](LICENSE). Third-party licences: [licenses/](lice
 Copyright © the OpenCompanion contributors. Installing an unofficial firmware is at your own risk
 ([legal notices](docs/legal.md)).
 
-<sub>Bose® and Companion® are trademarks of Bose Corporation. OpenCompanion is an independent project, not affiliated with or endorsed by Bose.</sub>
+<sub>Bose and Companion are trademarks of Bose Corporation. OpenCompanion is an independent project, not affiliated with or endorsed by Bose.</sub>

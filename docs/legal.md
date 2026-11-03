@@ -25,7 +25,7 @@ that applicable law grants them on a mandatory basis.
 ## Firmware risks
 
 OpenCompanion replaces your speaker's original firmware with an unofficial firmware that was neither designed
-nor tested by Bose®. You install it at your own risk.
+nor tested by Bose. You install it at your own risk.
 
 - **Speaker unusable.** If the installation or an update is interrupted (cable unplugged, power cut, computer
   going to sleep) or if the firmware has a defect, the speaker may stop working. A recovery procedure exists,
@@ -33,9 +33,9 @@ nor tested by Bose®. You install it at your own risk.
 - **Unexpected sound.** A firmware defect or a wrong setting can produce abnormal, loud or distorted sound. The
   protection limiter stays active, but it cannot cover every defect. Keep the volume moderate during your first
   tries.
-- **"Bose® original" profile.** This profile approximates the factory setting. It is not identical to the sound
-  of the Bose® firmware.
-- **Warranties.** A failure caused by OpenCompanion or by its installation may not be covered, neither by Bose®
-  nor by your seller. Bose® provides no support for this firmware.
-- **Going back to the Bose® firmware.** Possible from the backup made at installation ([Back to Bose](restore.md)).
+- **"Bose original" profile.** This profile approximates the factory setting. It is not identical to the sound
+  of the Bose firmware.
+- **Warranties.** A failure caused by OpenCompanion or by its installation may not be covered, neither by Bose
+  nor by your seller. Bose provides no support for this firmware.
+- **Going back to the Bose firmware.** Possible from the backup made at installation ([Back to Bose](restore.md)).
   The profiles stored in the speaker are then erased.
