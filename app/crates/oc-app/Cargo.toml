@@ -16,6 +16,10 @@ path = "src/main.rs"
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_UI_WindowsAndMessaging"] }
 
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+# Closing the window hides it in the tray (notification area, menu bar). No libxdo (menu shortcuts).
+tray-icon = { version = "0.21", default-features = false }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 # The tray: showing the hidden window again from the menu bar icon (the versions tray-icon uses).
 objc2 = "0.6"
@@ -37,8 +41,6 @@ rfd.workspace = true
 # eframe's `winit/default` features, dropped with egui's default fonts: Wayland through dlopen (no link-time
 # libwayland) and client-side decorations.
 winit = "0.30"
-# Closing the window hides it in the tray (notification area, menu bar, AppIndicator). No libxdo (menu shortcuts).
-tray-icon = { version = "0.21", default-features = false }
 
 [build-dependencies]
 # Windows targets only (build.rs): the .exe icon and version info, compiled with the Windows SDK's rc.exe (or
@@ -58,8 +60,8 @@ short_description = "Settings for the OpenCompanion firmware of the Companion 5 
 ashpd = { version = "0.11", default-features = false, features = ["async-std"] }
 pollster = "0.4"
 futures-util = { version = "0.3", default-features = false }
-# The tray icon runs its own GTK main loop on a thread (tray-icon's AppIndicator backend).
-gtk = "0.18"
+# The tray: a StatusNotifierItem over D-Bus, pure Rust (zbus, as ashpd), no GTK or C library.
+ksni = { version = "0.3", default-features = false, features = ["async-io", "blocking"] }
 
 [dev-dependencies]
 # Glyph coverage of the embedded fonts (egui's own fonts are not compiled in).

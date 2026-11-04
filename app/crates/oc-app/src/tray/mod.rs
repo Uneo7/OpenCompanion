@@ -1,12 +1,18 @@
-//! The tray (Windows notification area, macOS menu bar, Linux AppIndicator). Closing the window hides it there
-//! and the app keeps running; the icon shows the window again and its menu quits. Without a tray (screenshots,
-//! no AppIndicator on Linux), closing quits as before.
+//! The tray (Windows notification area, macOS menu bar, Linux StatusNotifierItem). Closing the window hides it
+//! there and the app keeps running; the icon shows the window again and its menu quits. Without a tray
+//! (screenshots, a Linux desktop without StatusNotifierItem host), closing quits as before.
 //!
-//! The tray events arrive outside egui's frame (the OS event loop, or the GTK thread on Linux): they only set
+//! The tray events arrive outside egui's frame (the OS event loop, or ksni's thread on Linux): they only set
 //! flags here, and [`watch`] applies them on the next frame. A hidden window may get no frame on macOS, so the
 //! window is also brought back natively there ([`native::show`]).
 
-mod menu;
+#[cfg(any(windows, target_os = "macos"))]
+#[path = "desktop.rs"]
+mod backend;
+#[cfg(target_os = "linux")]
+#[path = "linux.rs"]
+mod backend;
+mod icon;
 mod native;
 
 pub use native::event_loop_hook;
@@ -15,58 +21,32 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use eframe::egui::{Context, ViewportCommand};
-use tray_icon::{MouseButton, MouseButtonState, TrayIcon, TrayIconEvent};
 
 static READY: AtomicBool = AtomicBool::new(false);
 static SHOW: AtomicBool = AtomicBool::new(false);
 static QUIT: AtomicBool = AtomicBool::new(false);
 static CTX: OnceLock<Context> = OnceLock::new();
 
-/// Keeps the icon alive (Windows, macOS; on Linux it lives on its GTK thread).
+/// Keeps the icon alive.
 pub struct Tray {
-    _icon: Option<TrayIcon>,
+    _backend: Option<backend::Backend>,
 }
 
 pub fn start(cc: &eframe::CreationContext<'_>) -> Tray {
     let _ = CTX.set(cc.egui_ctx.clone());
     native::remember(cc);
     native::activate();
-    menu::on_events(request_show, request_quit);
-    TrayIconEvent::set_event_handler(Some(|e: TrayIconEvent| {
-        // macOS opens the menu on a click (the menu bar convention); elsewhere a left click shows the window.
-        if cfg!(not(target_os = "macos")) {
-            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
-                request_show();
-            }
-        }
-    }));
-    #[cfg(target_os = "linux")]
-    {
-        let _ = std::thread::Builder::new().name("oc-tray".into()).spawn(|| {
-            if gtk::init().is_err() {
-                return;
-            }
-            if let Some(_icon) = built() {
-                gtk::main();
-            }
-        });
-        Tray { _icon: None }
-    }
-    #[cfg(not(target_os = "linux"))]
-    Tray { _icon: built() }
-}
-
-fn built() -> Option<TrayIcon> {
-    match menu::build() {
-        Ok(icon) => {
+    let backend = match backend::spawn(request_show, request_quit) {
+        Ok(b) => {
             READY.store(true, Ordering::SeqCst);
-            Some(icon)
+            Some(b)
         }
         Err(e) => {
             oc_device::install::log_file::append(&[format!("tray unavailable ({e}): closing the window quits")]);
             None
         }
-    }
+    };
+    Tray { _backend: backend }
 }
 
 /// A tray icon exists: closing the window hides it instead of quitting.

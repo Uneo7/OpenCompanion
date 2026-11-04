@@ -67,7 +67,7 @@ It builds and tests the host, cross-links `x86_64`/`aarch64-unknown-linux-gnu` w
 libudev and libasound are taken from Debian packages into `target/cross-sysroot`), and builds both macOS targets
 on a Mac. Elsewhere macOS is only type-checked (`cargo check`): hidapi's `mac/hid.c` and the final link need the
 Apple SDK, which is not redistributable (set `SDKROOT` to a local SDK to link with zig).
-Native Linux build dependencies: `libudev-dev libasound2-dev libgtk-3-dev pkg-config` (X11, Wayland and GL are loaded at run
+Native Linux build dependencies: `libudev-dev libasound2-dev pkg-config` (X11, Wayland and GL are loaded at run
 time). CI: `../.github/workflows/ci.yml` (Windows, macOS, Ubuntu: build + test; macOS x86_64; Linux aarch64).
 
 ## Release packages
