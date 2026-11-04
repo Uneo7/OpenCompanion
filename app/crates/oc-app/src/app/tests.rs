@@ -7,10 +7,10 @@ use crate::widgets::{dialog::Body, eq_graph::Change};
 fn app() -> (App, Context) {
     let device: Box<dyn Device> = Box::new(SimDevice::new());
     let ui = UiState::new(device.as_ref());
-    (App { device, ui, shots: None }, Context::default())
+    (App { device, ui, shots: None, _tray: None }, Context::default())
 }
 
-/// The app on profile 2 ("Bureau", Office): profile 1, "Bose® d'origine" (Bose® original), is read-only.
+/// The app on profile 2 ("Bureau", Office): profile 1, "BoseÂ® d'origine" (BoseÂ® original), is read-only.
 fn editable() -> (App, Context) {
     let (mut app, ctx) = app();
     run(&mut app, &ctx, Action::ActivateProfile(1));
@@ -22,7 +22,7 @@ fn with_connection(c: Option<crate::model::Connection>) -> (App, Context) {
     sim.connection = c;
     let device: Box<dyn Device> = Box::new(sim);
     let ui = UiState::new(device.as_ref());
-    (App { device, ui, shots: None }, Context::default())
+    (App { device, ui, shots: None, _tray: None }, Context::default())
 }
 
 fn run(app: &mut App, ctx: &Context, a: Action) -> bool {
@@ -126,10 +126,10 @@ fn dialogs_validate_their_input() {
     let (mut app, ctx) = app();
     let empty = Body::Field { value: "  ".into(), max_len: 24 };
     assert!(!app.apply(&ctx, Action::Rename(2), Some(&empty)));
-    let name = Body::Field { value: "Soirée".into(), max_len: 24 };
+    let name = Body::Field { value: "SoirÃ©e".into(), max_len: 24 };
     assert!(app.apply(&ctx, Action::Rename(2), Some(&name)));
-    assert_eq!(app.device.profiles()[2].name, "Soirée");
-    let wrong = Body::Confirm { text: String::new(), placeholder: String::new(), value: "bosé".into() };
+    assert_eq!(app.device.profiles()[2].name, "SoirÃ©e");
+    let wrong = Body::Confirm { text: String::new(), placeholder: String::new(), value: "bosÃ©".into() };
     assert!(!app.apply(&ctx, Action::Factory, Some(&wrong)));
     let right = Body::Confirm { text: String::new(), placeholder: String::new(), value: " bose ".into() };
     assert!(app.apply(&ctx, Action::Factory, Some(&right)));
@@ -171,7 +171,7 @@ fn the_eq_mode_switches_keep_or_flatten_the_sound() {
     assert!(app.ui.eq.draft.advanced && app.ui.eq.draft.get(Target::Global).is_empty());
     assert_eq!(app.ui.eq.draft.get(Target::Sub), &global);
     assert!(app.ui.eq.target.is_advanced());
-    // Advanced → Simple asks first.
+    // Advanced â†’ Simple asks first.
     run(&mut app, &ctx, Action::AskSimple);
     assert!(app.ui.dialog.is_some());
     run(&mut app, &ctx, Action::SetAdvanced(false));

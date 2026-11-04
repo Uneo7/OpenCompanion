@@ -156,7 +156,7 @@ impl App {
             Action::ShowPane(p) => self.ui.settings.pane = p,
             Action::SetTheme { light } => self.ui.light = light,
             Action::Minimize => ctx.send_viewport_cmd(ViewportCommand::Minimized(true)),
-            Action::AskClose => self.ask_close(),
+            Action::AskClose => self.ask_close(ctx),
             Action::Close => {
                 if self.installer_writing() {
                     // An interrupted write would leave a chip without firmware: the window stays open.
@@ -403,7 +403,13 @@ impl App {
 
     /// Window button or a close request from the OS: closes at once. While the installer writes, a dialog only
     /// explains why the window cannot close now.
-    fn ask_close(&mut self) {
+    fn ask_close(&mut self, ctx: &Context) {
+        // With a tray the app keeps running (the tray menu quits): the window only hides.
+        if crate::tray::available() {
+            self.save(ctx);
+            crate::tray::hide(ctx);
+            return;
+        }
         if self.installer_writing() {
             let action = Action::View(crate::views::actions::ViewAction::Dismiss);
             self.dialog(tr("app.close.title"), Body::Text(tr("inst.warn.unplug").into()), tr("dialog.ok"), false, action);

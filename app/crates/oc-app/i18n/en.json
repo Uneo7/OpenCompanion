@@ -433,5 +433,7 @@
   "conn.inaccessible": "Cannot open the speaker: {error}. Retrying automatically.",
   "home.app_update.available": "New app version {version}",
   "home.app_update.needed": "needed for firmware {tag}",
-  "home.app_update.go": "Download"
+  "home.app_update.go": "Download",
+  "tray.open": "Open OpenCompanion",
+  "tray.quit": "Quit"
 }

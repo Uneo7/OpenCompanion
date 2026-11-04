@@ -433,5 +433,7 @@
   "conn.inaccessible": "Impossible d'ouvrir l'enceinte : {error}. Nouvel essai automatique.",
   "home.app_update.available": "Nouvelle version de l'application {version}",
   "home.app_update.needed": "requise pour le firmware {tag}",
-  "home.app_update.go": "Télécharger"
+  "home.app_update.go": "Télécharger",
+  "tray.open": "Ouvrir OpenCompanion",
+  "tray.quit": "Quitter"
 }

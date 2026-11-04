@@ -48,6 +48,8 @@ fn serve(l: &TcpListener) {
         if BufReader::new(&s).read_line(&mut line).is_ok() && line.trim() == HELLO {
             let _ = writeln!(&s, "{ACK}");
             SHOW.store(true, Ordering::SeqCst);
+            // The window may be hidden in the tray.
+            crate::tray::request_show();
             if let Some(ctx) = CTX.get() {
                 ctx.request_repaint();
             }

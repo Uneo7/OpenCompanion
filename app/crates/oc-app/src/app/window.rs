@@ -36,7 +36,14 @@ pub fn native_options(shots: bool) -> eframe::NativeOptions {
         let viewport = viewport().with_position([0.0, 0.0]).with_active(false).with_taskbar(false);
         return eframe::NativeOptions { viewport, centered: false, renderer: RENDERER, wgpu_options: wgpu_options(), ..Default::default() };
     }
-    eframe::NativeOptions { viewport: viewport(), centered: true, renderer: RENDERER, wgpu_options: wgpu_options(), ..Default::default() }
+    eframe::NativeOptions {
+        viewport: viewport(),
+        centered: true,
+        renderer: RENDERER,
+        wgpu_options: wgpu_options(),
+        event_loop_builder: crate::tray::event_loop_hook(),
+        ..Default::default()
+    }
 }
 
 /// The native API of each platform only (on Windows DX12 alone: NVIDIA ships its Vulkan driver in the same DLL as

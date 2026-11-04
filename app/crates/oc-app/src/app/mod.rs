@@ -26,6 +26,8 @@ pub struct App {
     pub(crate) device: Box<dyn Device>,
     pub(crate) ui: UiState,
     shots: Option<shots::Runner>,
+    /// The tray icon (none for screenshots): closing the window hides it there.
+    _tray: Option<crate::tray::Tray>,
 }
 
 impl App {
@@ -78,7 +80,8 @@ impl App {
         ui.screen = opts.screen;
         ui.light = opts.light;
         let lang = opts.lang;
-        Self { device, ui, shots: opts.shots.map(|dir| shots::Runner::new(dir, lang)) }
+        let tray = opts.shots.is_none().then(|| crate::tray::start(cc));
+        Self { device, ui, shots: opts.shots.map(|dir| shots::Runner::new(dir, lang)), _tray: tray }
     }
 
     pub(crate) fn reset(&mut self) {
@@ -117,12 +120,15 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let now = ctx.input(|i| i.time);
         crate::single_instance::watch(ctx);
-        // A close request from the OS (Alt+F4, Cmd+Q, the taskbar) asks first, like the window's close button.
+        // A close request from the OS (Alt+F4, Cmd+Q, the taskbar) does what the window's close button does.
         if ctx.input(|i| i.viewport().close_requested()) && !self.ui.close_confirmed {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             if self.ui.dialog.is_none() {
                 self.ui.act(actions::Action::AskClose);
             }
+        }
+        if crate::tray::watch(ctx) {
+            self.ui.act(actions::Action::Close);
         }
         self.device.tick(now);
         // Telemetry and timers advance without input.

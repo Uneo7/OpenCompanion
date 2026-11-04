@@ -7,5 +7,6 @@ pub mod model;
 mod platform;
 pub mod single_instance;
 mod theme;
+mod tray;
 mod views;
 mod widgets;
