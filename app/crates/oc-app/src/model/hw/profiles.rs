@@ -29,12 +29,17 @@ pub fn slot_empty(st: &HwState, i: usize) -> bool {
 }
 
 impl HwDevice {
+    /// The profile read from slot `i` is the one held (not a previous slot's while `i` loads).
+    pub(super) fn holds(&self, i: usize) -> bool {
+        self.stored_slot == Some(i)
+    }
+
     pub(super) fn activate(&mut self, i: usize) {
         if i >= PROFILE_COUNT || !self.st.ready() {
             return;
         }
         self.ui_active = i;
-        self.requested = Some(i);
+        self.requested = Some((i, self.now));
         self.compare = false;
         self.send(Command::Load(i as u8));
         self.rebuild();
@@ -42,7 +47,7 @@ impl HwDevice {
 
     /// Saves `bands` to slot `i` (the active one: the DSP saves its active profile only).
     pub(super) fn store(&mut self, i: usize, bands: &ProfileBands) -> bool {
-        if i != self.ui_active || i >= self.profiles.len() || i == LOCKED {
+        if i != self.ui_active || !self.holds(i) || i >= self.profiles.len() || i == LOCKED {
             return false;
         }
         let (Some(stored), Some(live)) = (self.stored.as_mut(), self.live.as_mut()) else { return false };
@@ -64,13 +69,13 @@ impl HwDevice {
     /// app's copy (see [`crate::model::device::params_of`]).
     pub(super) fn params_of(&self, i: usize) -> Option<Params> {
         match &self.stored {
-            Some(p) if i == self.ui_active && !self.compare => Some(p.clone()),
+            Some(p) if i == self.ui_active && self.holds(i) && !self.compare => Some(p.clone()),
             _ => None,
         }
     }
 
     pub(super) fn import(&mut self, i: usize, p: &Params) -> bool {
-        if i != self.ui_active || i >= self.profiles.len() || i == LOCKED {
+        if i != self.ui_active || !self.holds(i) || i >= self.profiles.len() || i == LOCKED {
             return false;
         }
         let (Some(stored), Some(live)) = (self.stored.as_mut(), self.live.as_mut()) else { return false };
@@ -109,7 +114,7 @@ impl HwDevice {
             e.valid = true;
         }
         self.ui_active = to;
-        self.requested = Some(to);
+        self.requested = Some((to, self.now));
         self.compare = false;
         self.rebuild();
         true
@@ -119,7 +124,7 @@ impl HwDevice {
         if i >= PROFILE_COUNT || !self.st.ready() {
             return;
         }
-        if i == self.ui_active {
+        if i == self.ui_active && self.holds(i) {
             let (Some(stored), Some(live)) = (self.stored.as_mut(), self.live.as_mut()) else { return };
             for p in [stored, live] {
                 if let Some(n) = &name {

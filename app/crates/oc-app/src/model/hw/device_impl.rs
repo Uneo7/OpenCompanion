@@ -254,7 +254,7 @@ impl Device for HwDevice {
             }
         }
         let write = crate::model::settings::profile_write(&self.settings, &s, locked, sub);
-        if write != crate::model::settings::ProfileWrite::None {
+        if write != crate::model::settings::ProfileWrite::None && self.holds(self.ui_active) {
             if let (Some(stored), Some(live)) = (self.stored.as_mut(), self.live.as_mut()) {
                 convert::apply_settings(live, &s, sub);
                 if write == crate::model::settings::ProfileWrite::Save {

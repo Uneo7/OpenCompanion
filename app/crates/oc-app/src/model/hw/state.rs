@@ -114,7 +114,7 @@ impl HwState {
                 self.sys = Some(s);
                 Changed::Nothing
             }
-            other @ (Event::Profile(_) | Event::Console { .. } | Event::Failed { .. } | Event::Provisioned(_) | Event::Restarted { .. }) => {
+            other @ (Event::Profile { .. } | Event::Console { .. } | Event::Failed { .. } | Event::Provisioned(_) | Event::Restarted { .. }) => {
                 return Err(other)
             }
         })

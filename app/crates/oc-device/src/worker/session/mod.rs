@@ -1,5 +1,6 @@
 mod exec;
 mod poll;
+use poll::ReadProfile;
 mod restart;
 
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
@@ -131,7 +132,7 @@ impl Session {
             if let Ok(b) = self.with_dsp(|d| d.boot_status()) {
                 self.emit(Event::Boot(b));
             }
-            self.refresh_profiles(true);
+            self.refresh_profiles(ReadProfile::Active);
         } else if !full {
             self.full = false;
             if let Ok(v) = self.with_dsp(|d| d.versions()) {

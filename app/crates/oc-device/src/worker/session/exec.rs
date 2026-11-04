@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use super::poll::ReadProfile;
 use super::Session;
 use crate::console::{Dsp, OpInfo, SLOTS};
 use crate::error::Error;
@@ -114,7 +115,7 @@ impl Session {
             Command::LoadBose => self.load_bose(),
             Command::SetBassSource(src) => {
                 let r = self.with_dsp(|d| d.op_bass_source(src).and_then(|_| wait_job(d)).and_then(|i| job_ok("OPS", i)));
-                r.map(|_| self.refresh_profiles(false))
+                r.map(|_| self.refresh_profiles(ReadProfile::No))
             }
             Command::SetSubLevel(db10) => {
                 self.with_dsp(|d| d.set_sub_level(db10).and_then(|_| d.bass_device())).map(|b| self.emit(Event::Bass(b)))
@@ -136,7 +137,7 @@ impl Session {
             }
             Command::Restart(crate::worker::messages::RestartTarget::Usb) => self.restart_usb(),
             Command::Refresh => {
-                self.refresh_profiles(true);
+                self.refresh_profiles(ReadProfile::Active);
                 Ok(())
             }
         }
@@ -172,7 +173,7 @@ impl Session {
             Err(e) => return Err(e),
         }
         self.mirror = None;
-        self.refresh_profiles(true);
+        self.refresh_profiles(ReadProfile::Slot(slot));
         Ok(())
     }
 
@@ -212,7 +213,7 @@ impl Session {
             let back = info.active.unwrap_or(0);
             self.with_dsp(|d| d.op_load(back).and_then(|_| wait_job(d)).map(drop))?;
             self.mirror = None;
-            self.refresh_profiles(true);
+            self.refresh_profiles(ReadProfile::Slot(back));
         }
         self.emit(Event::Provisioned(written));
         Ok(())
@@ -221,7 +222,7 @@ impl Session {
     fn save(&mut self, slot: u8, p: &Profile) -> crate::Result<()> {
         self.write(p)?;
         self.with_dsp(|d| d.op_save(slot).and_then(|_| wait_job(d)).and_then(|i| job_ok("OPV", i)))?;
-        self.refresh_profiles(false);
+        self.refresh_profiles(ReadProfile::No);
         Ok(())
     }
 
@@ -247,14 +248,14 @@ impl Session {
         };
         self.mirror = None;
         back.and_then(|_| self.write(live))?;
-        self.refresh_profiles(false);
+        self.refresh_profiles(ReadProfile::No);
         saved
     }
 
     fn load_bose(&mut self) -> crate::Result<()> {
         self.with_dsp(|d| d.op_bose())?;
         self.mirror = None;
-        self.refresh_profiles(true);
+        self.refresh_profiles(ReadProfile::Unsaved);
         Ok(())
     }
 }

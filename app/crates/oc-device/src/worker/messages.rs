@@ -71,7 +71,9 @@ pub enum Event {
     Mode(Option<DeviceMode>),
     Slots(Vec<SlotEntry>),
     Info(OpInfo),
-    Profile(Box<Profile>),
+    /// The active profile as read back from the DSP, with the slot it belongs to (`None`: no saved slot, e.g.
+    /// the built-in Bose profile played for a comparison). A profile is only ever saved back to that slot.
+    Profile { profile: Box<Profile>, slot: Option<u8> },
     Bass(BassState),
     Route21(Route21),
     Meters(Meters),

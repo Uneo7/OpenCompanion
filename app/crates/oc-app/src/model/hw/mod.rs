@@ -42,12 +42,14 @@ pub struct HwDevice {
     installer: InstallController,
     st: HwState,
     stored: Option<Params>,
+    /// The slot `stored` was read from: the only slot it is ever saved to.
+    stored_slot: Option<usize>,
     live: Option<Params>,
     compare: bool,
     /// Slot the UI treats as active (the speaker may have none: flat defaults at boot).
     ui_active: usize,
-    /// Slot of a load the app asked for (an empty slot loads the defaults and keeps the DSP's active slot).
-    requested: Option<usize>,
+    /// Slot of a load the app asked for, and when: until its reply, a profile read for another slot is stale.
+    requested: Option<(usize, f64)>,
     profiles: Vec<Profile>,
     /// Bands last known per slot (only the active slot can be read from the speaker).
     bands: [Option<ProfileBands>; PROFILE_COUNT],
@@ -97,6 +99,7 @@ impl HwDevice {
             installer,
             st: HwState::default(),
             stored: None,
+            stored_slot: None,
             live: None,
             compare: false,
             ui_active: 0,
@@ -159,6 +162,7 @@ impl HwDevice {
                     }
                     if !self.st.ready() {
                         self.stored = None;
+                        self.stored_slot = None;
                         self.live = None;
                         self.compare = false;
                         self.provisioned = false;
@@ -166,8 +170,8 @@ impl HwDevice {
                     dirty = true;
                 }
                 Ok(_) => dirty = true,
-                Err(Event::Profile(p)) => {
-                    self.on_profile(*p);
+                Err(Event::Profile { profile, slot }) => {
+                    self.on_profile(*profile, slot);
                     dirty = true;
                 }
                 Err(Event::Console { reply, .. }) => self.console.push_back(reply),
@@ -206,24 +210,32 @@ impl HwDevice {
         }
     }
 
-    fn on_profile(&mut self, p: Params) {
+    /// The active profile read back from the DSP, for `slot`. Its name and colour belong to that slot only:
+    /// attributing it to another one would save them there.
+    fn on_profile(&mut self, p: Params, slot: Option<u8>) {
+        /// A load that got no reply (failed) stops holding the profiles back after this.
+        const REQUEST_TIMEOUT_S: f64 = 5.0;
         if self.compare {
             return; // the built-in Bose profile plays for the comparison: not the user's profile
         }
-        if let Some(r) = self.requested.take() {
-            self.ui_active = r;
-        } else if let Some(a) = self.st.info.and_then(|i| i.active) {
-            self.ui_active = usize::from(a).min(PROFILE_COUNT - 1);
+        let Some(slot) = slot.map(usize::from).filter(|s| *s < PROFILE_COUNT) else { return };
+        if let Some((r, at)) = self.requested {
+            if r != slot && self.now - at < REQUEST_TIMEOUT_S {
+                return; // an earlier load's reply: the requested one follows
+            }
+            self.requested = None;
         }
+        self.ui_active = slot;
         let mut p = p;
-        if profiles::slot_empty(&self.st, self.ui_active) {
+        if profiles::slot_empty(&self.st, slot) {
             // An empty slot loads as the Bose base (`OPK`): it keeps its default name and colour until saved.
-            p.set_name(crate::model::profile::DEFAULT_NAMES[self.ui_active]);
-            p.color = self.ui_active as u8;
+            p.set_name(crate::model::profile::DEFAULT_NAMES[slot]);
+            p.color = slot as u8;
         }
-        let hint = self.bands[self.ui_active].clone();
-        self.bands[self.ui_active] = Some(convert::bands_from(&p, hint.as_ref()));
+        let hint = self.bands[slot].clone();
+        self.bands[slot] = Some(convert::bands_from(&p, hint.as_ref()));
         self.stored = Some(p.clone());
+        self.stored_slot = Some(slot);
         self.live = Some(p);
         self.save_settings_at = None;
         self.reloaded = true;
@@ -258,7 +270,9 @@ impl HwDevice {
 
     fn save_stored(&mut self) {
         let (Some(stored), Some(live)) = (self.stored.clone(), self.live.clone()) else { return };
-        self.send(Command::Save { slot: self.ui_active as u8, profile: stored.clone() });
+        // Only to the slot the profile was read from, and only while it is the active one.
+        let Some(slot) = self.stored_slot.filter(|s| *s == self.ui_active) else { return };
+        self.send(Command::Save { slot: slot as u8, profile: stored.clone() });
         if live != stored {
             self.send(Command::Write(live));
         }

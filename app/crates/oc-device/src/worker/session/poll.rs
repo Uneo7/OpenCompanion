@@ -94,11 +94,11 @@ impl Session {
         // A load by the pod (mute double press) changes the active slot; a save changes the directory.
         let loaded = prev.active != info.active;
         if loaded || (prev.busy && !info.busy) {
-            self.refresh_profiles(loaded);
+            self.refresh_profiles(if loaded { ReadProfile::Active } else { ReadProfile::No });
         }
     }
 
-    pub(super) fn refresh_profiles(&mut self, read_profile: bool) {
+    pub(super) fn refresh_profiles(&mut self, read: ReadProfile) {
         let info = self.with_dsp(|d| d.op_info());
         if let Some(info) = self.track(info) {
             self.last_info = Some(info);
@@ -108,11 +108,17 @@ impl Session {
         if let Some(slots) = self.track(slots) {
             self.emit(Event::Slots(slots));
         }
-        if read_profile {
+        let slot = match read {
+            ReadProfile::No => None,
+            ReadProfile::Active => Some(self.last_info.and_then(|i| i.active)),
+            ReadProfile::Slot(s) => Some(Some(s)),
+            ReadProfile::Unsaved => Some(None),
+        };
+        if let Some(slot) = slot {
             let p = self.with_dsp(|d| d.read_profile());
             if let Some(p) = self.track(p) {
                 self.mirror = Some(p.clone());
-                self.emit(Event::Profile(Box::new(p)));
+                self.emit(Event::Profile { profile: Box::new(p), slot });
             }
         }
         let bass = self.with_dsp(|d| d.op_bass());
@@ -161,4 +167,16 @@ impl Session {
             self.emit(e);
         }
     }
+}
+
+/// Whether [`Session::refresh_profiles`] reads the active profile back, and which slot it belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ReadProfile {
+    No,
+    /// The DSP's active slot (`OPI`).
+    Active,
+    /// The slot just loaded (an empty slot loads the defaults and keeps the DSP's active slot).
+    Slot(u8),
+    /// Not a saved slot (the built-in Bose profile).
+    Unsaved,
 }

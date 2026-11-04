@@ -164,18 +164,25 @@ fn steps() -> Vec<Step> {
             }),
         );
     }
-    // README: a gentle, realistic curve (warm bass, slight presence, air).
+    // README: a real corrective profile in Advanced, against the Bose response of the driver: the 230 Hz
+    // bump tamed, the 2 kHz dip filled, a little air.
     add(
         "readme-equalizer",
         Box::new(|a, _| {
             eq_editable(a);
-            a.device.rename_profile(3, "Warm");
-            let g = a.ui.eq.draft.get_mut(Target::Global);
-            g.push(Band::new(BandType::LowShelf, 90.0, 3.0, 0.71));
-            g.push(Band::new(BandType::Peak, 320.0, -1.5, 1.0));
-            g.push(Band::new(BandType::Peak, 2500.0, 1.5, 0.9));
-            g.push(Band::new(BandType::HighShelf, 9000.0, 2.5, 0.71));
-            a.ui.eq.selected = 2;
+            a.device.rename_profile(3, "Desk");
+            a.ui.eq.draft.to_advanced();
+            a.ui.eq.target = Target::InnerRight;
+            a.ui.eq.driver = Target::InnerRight;
+            let g = a.ui.eq.draft.get_mut(Target::InnerRight);
+            g.push(Band::new(BandType::Peak, 230.0, -4.5, 1.4));
+            g.push(Band::new(BandType::Peak, 750.0, 1.5, 2.0));
+            g.push(Band::new(BandType::Peak, 2100.0, 4.0, 1.3));
+            g.push(Band::new(BandType::HighShelf, 7000.0, 2.0, 0.71));
+            if a.ui.eq.link {
+                a.ui.eq.draft.mirror_from(Target::InnerRight);
+            }
+            a.ui.eq.selected = 0;
         }),
     );
     add(

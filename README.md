@@ -21,7 +21,7 @@
 Works on Windows, macOS and Linux.
 
 <p>
-  <img src="docs/images/equalizer.png" width="49%" alt="Equalizer with eight bands">
+  <img src="docs/images/equalizer.png" width="49%" alt="Advanced equalizer: a corrective profile over the Bose response of one driver">
   <img src="docs/images/settings-outputs.png" width="49%" alt="Output levels and subwoofer settings">
 </p>
 
